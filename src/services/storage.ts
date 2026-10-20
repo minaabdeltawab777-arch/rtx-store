@@ -23,12 +23,19 @@ export const DEFAULT_SETTINGS: StoreSettings = {
   defaultLabelPreset: '50x30',
   customLabelWidthMm: 50,
   customLabelHeightMm: 30,
+  labelTemplate: 'phone_box',
+  qrMode: 'online',
   labelShowLogo: true,
   labelShowStoreName: true,
   labelShowPrice: true,
   labelShowSku: true,
   labelShowModel: true,
   labelShowBarcodeText: true,
+  labelShowQR: true,
+  labelShowSpecs: true,
+  labelShowWarranty: true,
+  labelShowSerial: true,
+  labelFontSize: 'standard',
   labelSheetColumns: 1,
   scannerAudioFeedback: true,
   scannerSuffix: 'Enter',
@@ -250,7 +257,20 @@ class StorageService {
 
   private saveProducts(products: Product[]): void {
     this.products = products;
-    localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
+    try {
+      localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
+    } catch (e) {
+      console.warn('Storage quota exceeded, attempting to save without large base64 images:', e);
+      try {
+        const stripped = products.map(p => ({
+          ...p,
+          image: p.image && p.image.length > 50000 ? undefined : p.image
+        }));
+        localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(stripped));
+      } catch (innerErr) {
+        console.error('Critical failure saving products to localStorage:', innerErr);
+      }
+    }
   }
 
   // --- Categories Management ---
@@ -318,14 +338,19 @@ class StorageService {
   } {
     this.init();
 
-    // 1. Validate stock limits for tracked products
+    // 1. Validate total stock limits for tracked products across all line items
+    const productQuantities: Record<string, number> = {};
     for (const item of invoiceData.items) {
-      const prod = this.getProductById(item.productId);
+      productQuantities[item.productId] = (productQuantities[item.productId] || 0) + item.quantity;
+    }
+
+    for (const [productId, neededQty] of Object.entries(productQuantities)) {
+      const prod = this.getProductById(productId);
       if (prod && prod.stockTracking) {
-        if (prod.stockQuantity < item.quantity) {
+        if (prod.stockQuantity < neededQty) {
           return {
             success: false,
-            error: `الكمية المتاحة من المنتج (${prod.name}) غير كافية! المتاح حالياً: ${prod.stockQuantity} فقط.`
+            error: `الكمية المتاحة من المنتج (${prod.name}) غير كافية! المطلوب: ${neededQty}، المتاح حالياً: ${prod.stockQuantity} فقط.`
           };
         }
       }

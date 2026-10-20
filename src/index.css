@@ -24,14 +24,37 @@
 
 /* Print specific styles for barcode stickers and thermal receipts */
 @media print {
-  body {
+  html, body {
     background: white !important;
     color: black !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
   }
   
   /* Hide all screen interface elements when printing */
   .no-print, nav, header, aside, .sidebar, .screen-only, button:not(.keep-print) {
     display: none !important;
+  }
+
+  /* Reset modal containers when printing so backdrop and dark borders are not printed */
+  .fixed.inset-0 {
+    position: static !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+  }
+  .bg-\[\#12151e\], .bg-\[\#0a0c10\], .bg-\[\#181d2a\], .bg-\[\#131722\] {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
   }
 
   /* Show print container exclusively */
@@ -41,6 +64,8 @@
     width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
+    background: white !important;
+    color: black !important;
   }
 
   /* Thermal 80mm receipt */

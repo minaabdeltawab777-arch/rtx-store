@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Invoice, StoreSettings } from '../types';
-import { formatEGP, formatDateArabic, formatTimeOnly } from '../utils/formatters';
+import { formatEGP, formatDateArabic, formatTimeOnly, getCairoDateString, getCairoYesterdayString } from '../utils/formatters';
 import { ReceiptModal } from '../components/ReceiptModal';
 import {
   TrendingUp,
@@ -31,29 +31,27 @@ export const DailySalesView: React.FC<DailySalesViewProps> = ({ invoices, settin
   // Filter completed invoices only
   const completedInvoices = invoices.filter(inv => inv.status === 'completed');
 
-  // Dates for comparison
-  const now = new Date();
-  const todayStr = now.toISOString().split('T')[0];
-  const yesterday = new Date(Date.now() - 86400000);
-  const yesterdayStr = yesterday.toISOString().split('T')[0];
+  // Dates for comparison in Africa/Cairo timezone
+  const cairoToday = getCairoDateString(new Date());
+  const cairoYesterday = getCairoYesterdayString();
   const weekAgoTime = Date.now() - 7 * 86400000;
 
   const filteredInvoices = completedInvoices.filter(inv => {
-    const invDateStr = inv.createdAt.split('T')[0];
+    const invCairoDate = getCairoDateString(new Date(inv.createdAt));
     const invTime = new Date(inv.createdAt).getTime();
 
     if (period === 'today') {
-      return invDateStr === todayStr;
+      return invCairoDate === cairoToday;
     }
     if (period === 'yesterday') {
-      return invDateStr === yesterdayStr;
+      return invCairoDate === cairoYesterday;
     }
     if (period === 'week') {
       return invTime >= weekAgoTime;
     }
     if (period === 'custom') {
-      if (customStartDate && invDateStr < customStartDate) return false;
-      if (customEndDate && invDateStr > customEndDate) return false;
+      if (customStartDate && invCairoDate < customStartDate) return false;
+      if (customEndDate && invCairoDate > customEndDate) return false;
       return true;
     }
     return true;
@@ -115,7 +113,7 @@ export const DailySalesView: React.FC<DailySalesViewProps> = ({ invoices, settin
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `RTX_Sales_${period}_${todayStr}.csv`);
+    link.setAttribute('download', `RTX_Sales_${period}_${cairoToday}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

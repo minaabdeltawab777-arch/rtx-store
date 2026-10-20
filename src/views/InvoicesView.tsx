@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Invoice, StoreSettings } from '../types';
-import { formatEGP, formatDateArabic, formatDateShort } from '../utils/formatters';
+import { formatEGP, formatDateArabic, formatDateShort, getCairoDateString, getCairoYesterdayString } from '../utils/formatters';
 import { storage } from '../services/storage';
 import { ReceiptModal } from '../components/ReceiptModal';
 import {
@@ -45,10 +45,9 @@ export const InvoicesView: React.FC<InvoicesViewProps> = ({
     other: 'أخرى'
   };
 
-  // Filter logic
-  const now = new Date();
-  const todayStr = now.toISOString().split('T')[0];
-  const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+  // Filter logic in Africa/Cairo timezone
+  const cairoToday = getCairoDateString(new Date());
+  const cairoYesterday = getCairoYesterdayString();
   const weekAgoTime = Date.now() - 7 * 86400000;
 
   const filteredInvoices = invoices.filter(inv => {
@@ -70,13 +69,13 @@ export const InvoicesView: React.FC<InvoicesViewProps> = ({
     const matchStatus = statusFilter === 'all' || inv.status === statusFilter;
 
     let matchDate = true;
-    const invDateStr = inv.createdAt.split('T')[0];
+    const invCairoDate = getCairoDateString(new Date(inv.createdAt));
     const invTime = new Date(inv.createdAt).getTime();
 
     if (dateFilter === 'today') {
-      matchDate = invDateStr === todayStr;
+      matchDate = invCairoDate === cairoToday;
     } else if (dateFilter === 'yesterday') {
-      matchDate = invDateStr === yesterdayStr;
+      matchDate = invCairoDate === cairoYesterday;
     } else if (dateFilter === 'week') {
       matchDate = invTime >= weekAgoTime;
     }

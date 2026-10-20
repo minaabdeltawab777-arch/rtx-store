@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Product, StoreSettings } from '../types';
-import { BarcodeRenderer } from './BarcodeRenderer';
+import { PhoneBoxLabel, PhoneBoxTemplateType } from './PhoneBoxLabel';
 import { formatEGP } from '../utils/formatters';
-import { Printer, X, Sliders, CheckCircle } from 'lucide-react';
+import { Printer, X, Sliders, CheckCircle, Smartphone, Tag, Eye } from 'lucide-react';
 
 interface SingleLabelModalProps {
   product: Product;
@@ -21,12 +21,19 @@ export const SingleLabelModal: React.FC<SingleLabelModalProps> = ({
 }) => {
   const [quantity, setQuantity] = useState(1);
   const [sizePreset, setSizePreset] = useState<string>(settings.defaultLabelPreset || '50x30');
+  const [template, setTemplate] = useState<PhoneBoxTemplateType>(
+    (settings.labelTemplate as PhoneBoxTemplateType) || 'phone_box'
+  );
+  const [showPrice, setShowPrice] = useState(settings.labelShowPrice ?? true);
+  const [showSpecs, setShowSpecs] = useState(settings.labelShowSpecs ?? true);
+  const [showModel, setShowModel] = useState(settings.labelShowModel ?? true);
 
   const SIZES: Record<string, { w: number; h: number; label: string }> = {
-    '40x25': { w: 40, h: 25, label: '40 × 25 مم' },
-    '50x30': { w: 50, h: 30, label: '50 × 30 مم (قياسي)' },
-    '60x40': { w: 60, h: 40, label: '60 × 40 مم' },
-    '70x50': { w: 70, h: 50, label: '70 × 50 مم' }
+    '40x25': { w: 40, h: 25, label: '40 × 25 مم (إكسسوارات وصغير)' },
+    '50x25': { w: 50, h: 25, label: '50 × 25 مم (طابعات حرارية شائعة)' },
+    '50x30': { w: 50, h: 30, label: '50 × 30 مم (قياسي / نمط علب الهواتف)' },
+    '60x40': { w: 60, h: 40, label: '60 × 40 مم (كبير شامل المواصفات)' },
+    '70x50': { w: 70, h: 50, label: '70 × 50 مم (شامل QR والمواصفات)' }
   };
 
   if (!isOpen) return null;
@@ -40,32 +47,77 @@ export const SingleLabelModal: React.FC<SingleLabelModalProps> = ({
   const labelsArray = Array.from({ length: Math.max(1, quantity) });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-      <div className="bg-[#12151e] border border-[#262c3d] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
+      <div className="bg-[#12151e] border-2 border-[#2b354c] rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col my-auto">
         {/* Header */}
         <div className="p-4 bg-[#181d2a] border-b border-[#262c3d] flex items-center justify-between no-print">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-[#76b900]/20 text-[#76b900] flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-[#76b900]/20 text-[#76b900] flex items-center justify-center font-bold">
               <Printer className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-white">طباعة استيكر الباركود للمنتج</h2>
+              <h2 className="text-sm font-bold text-white">طباعة استيكر الباركود — نمط علب الأجهزة</h2>
               <p className="text-[11px] text-slate-400 font-mono truncate max-w-xs">{product.name}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-white rounded-lg transition-colors"
+            className="p-1.5 text-slate-400 hover:text-white rounded-lg transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content & Settings */}
-        <div className="p-5 space-y-4 no-print">
+        <div className="p-5 space-y-4 no-print overflow-y-auto max-h-[80vh]">
+          {/* Layout Template Selector */}
+          <div>
+            <label className="text-xs text-slate-300 font-medium block mb-1.5">
+              شكل تصميم الملصق:
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => setTemplate('phone_box')}
+                className={`p-2 rounded-xl border text-center transition-all cursor-pointer ${
+                  template === 'phone_box'
+                    ? 'bg-[#76b900]/20 border-[#76b900] text-[#76b900] font-bold'
+                    : 'bg-[#0d1017] border-[#272f44] text-slate-400 hover:text-white'
+                }`}
+              >
+                <div className="text-xs">علبة الهواتف</div>
+                <div className="text-[9px] opacity-75">بيانات + باركود + مواصفات</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setTemplate('barcode_first')}
+                className={`p-2 rounded-xl border text-center transition-all cursor-pointer ${
+                  template === 'barcode_first'
+                    ? 'bg-[#76b900]/20 border-[#76b900] text-[#76b900] font-bold'
+                    : 'bg-[#0d1017] border-[#272f44] text-slate-400 hover:text-white'
+                }`}
+              >
+                <div className="text-xs">الباركود أولاً</div>
+                <div className="text-[9px] opacity-75">باركود بارز ثم بياناته</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setTemplate('compact')}
+                className={`p-2 rounded-xl border text-center transition-all cursor-pointer ${
+                  template === 'compact'
+                    ? 'bg-[#76b900]/20 border-[#76b900] text-[#76b900] font-bold'
+                    : 'bg-[#0d1017] border-[#272f44] text-slate-400 hover:text-white'
+                }`}
+              >
+                <div className="text-xs">مختصر / إكسسوار</div>
+                <div className="text-[9px] opacity-75">للمقاسات الصغيرة</div>
+              </button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-slate-400 block mb-1">مقاس الملصق:</label>
+              <label className="text-xs text-slate-400 block mb-1">مقاس الملصق الحراري:</label>
               <select
                 value={sizePreset}
                 onChange={e => setSizePreset(e.target.value)}
@@ -115,7 +167,7 @@ export const SingleLabelModal: React.FC<SingleLabelModalProps> = ({
                 key={qty}
                 type="button"
                 onClick={() => setQuantity(qty)}
-                className={`px-2 py-0.5 rounded text-xs font-mono font-bold border transition-colors ${
+                className={`px-2.5 py-0.5 rounded-lg text-xs font-mono font-bold border transition-colors ${
                   quantity === qty
                     ? 'bg-[#76b900] text-black border-[#76b900]'
                     : 'bg-[#181d2a] text-slate-300 border-[#2b3347] hover:text-white'
@@ -126,39 +178,67 @@ export const SingleLabelModal: React.FC<SingleLabelModalProps> = ({
             ))}
           </div>
 
-          {/* Sticker Realistic Preview */}
-          <div className="bg-[#0a0c10] p-6 rounded-xl border border-[#242b3b] flex flex-col items-center justify-center">
-            <div className="text-[10px] text-slate-500 mb-2 font-mono">معاينة الاستيكر الفعلي:</div>
-            <div
-              className="bg-white text-black p-2.5 rounded shadow-xl flex flex-col justify-between items-center text-center overflow-hidden border border-slate-300"
-              style={{
-                width: `${currentSize.w * 3.78}px`,
-                minHeight: `${currentSize.h * 3.78}px`
-              }}
-            >
-              <div className="text-[10px] font-black text-black font-mono tracking-tight leading-none mb-0.5">
-                {settings.storeName}
-              </div>
-              <div className="text-[9px] font-bold text-gray-900 leading-tight line-clamp-2 px-1">
-                {product.name}
-              </div>
-              {product.model && (
-                <div className="text-[8px] text-gray-600 font-mono leading-none my-0.5">
-                  {product.model}
-                </div>
-              )}
-              <div className="w-full flex justify-center my-0.5">
-                <BarcodeRenderer
-                  value={product.internalBarcode}
-                  height={currentSize.h * 1.05}
-                  width={1.3}
-                  fontSize={8.5}
-                  displayValue={true}
-                />
-              </div>
-              <div className="text-[10px] font-black font-mono text-black border-t border-gray-300 pt-0.5 w-full leading-none">
-                {formatEGP(product.price)}
-              </div>
+          {/* Quick Toggles */}
+          <div className="flex items-center gap-4 text-xs text-slate-300 pt-1">
+            <label className="flex items-center gap-1.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showPrice}
+                onChange={e => setShowPrice(e.target.checked)}
+                className="accent-[#76b900]"
+              />
+              <span>إظهار السعر</span>
+            </label>
+            <label className="flex items-center gap-1.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showSpecs}
+                onChange={e => setShowSpecs(e.target.checked)}
+                className="accent-[#76b900]"
+              />
+              <span>إظهار المواصفات</span>
+            </label>
+            <label className="flex items-center gap-1.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showModel}
+                onChange={e => setShowModel(e.target.checked)}
+                className="accent-[#76b900]"
+              />
+              <span>الموديل</span>
+            </label>
+          </div>
+
+          {/* Sticker Realistic Phone Box Preview */}
+          <div className="bg-[#090b10] p-5 rounded-2xl border border-[#242b3b] flex flex-col items-center justify-center">
+            <div className="flex items-center justify-between w-full mb-3 text-[11px] text-slate-400">
+              <span className="flex items-center gap-1.5 font-bold text-white">
+                <Eye className="w-3.5 h-3.5 text-[#76b900]" />
+                معاينة استيكر علبة الأجهزة الحقيقي ({currentSize.w} × {currentSize.h} مم):
+              </span>
+              <span className="font-mono text-[#76b900]">{product.internalBarcode}</span>
+            </div>
+
+            <div className="p-3 bg-white/5 rounded-xl border border-white/10 flex items-center justify-center">
+              <PhoneBoxLabel
+                product={product}
+                settings={settings}
+                widthMm={currentSize.w}
+                heightMm={currentSize.h}
+                template={template}
+                showPrice={showPrice}
+                showSpecs={showSpecs}
+                showModel={showModel}
+                showBarcodeText={true}
+                showStoreName={settings.labelShowStoreName ?? true}
+                showSku={settings.labelShowSku ?? true}
+                showWarranty={settings.labelShowWarranty ?? true}
+                showSerial={settings.labelShowSerial ?? true}
+                className="shadow-2xl"
+              />
+            </div>
+            <div className="text-[10px] text-slate-500 mt-2 font-mono">
+              كود 128 قياسي عالي التباين متوافق 100% مع كافة مسدسات وقوارئ الباركود
             </div>
           </div>
         </div>
@@ -171,7 +251,7 @@ export const SingleLabelModal: React.FC<SingleLabelModalProps> = ({
                 onClose();
                 onOpenBulk(product);
               }}
-              className="text-xs text-[#76b900] hover:underline cursor-pointer"
+              className="text-xs text-[#76b900] hover:underline cursor-pointer font-bold"
             >
               فتح في الطباعة المجمعة ←
             </button>
@@ -179,22 +259,22 @@ export const SingleLabelModal: React.FC<SingleLabelModalProps> = ({
           <div className="flex items-center gap-2 mr-auto">
             <button
               onClick={onClose}
-              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl"
+              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl cursor-pointer"
             >
               إلغاء
             </button>
             <button
               onClick={handlePrint}
-              className="px-5 py-2 bg-[#76b900] hover:bg-[#88d400] text-black font-black text-xs rounded-xl flex items-center gap-1.5 shadow-lg shadow-[#76b900]/25 cursor-pointer"
+              className="px-6 py-2.5 bg-[#76b900] hover:bg-[#88d400] text-black font-black text-xs rounded-xl flex items-center gap-2 shadow-lg shadow-[#76b900]/25 cursor-pointer"
             >
               <Printer className="w-4 h-4" />
-              طباعة {quantity} ملصق
+              طباعة {quantity} ملصق الآن
             </button>
           </div>
         </div>
       </div>
 
-      {/* Media print target */}
+      {/* Pure Print Container (1:1 physical millimeter scaling) */}
       <div className="print-area hidden">
         <style dangerouslySetInnerHTML={{
           __html: `
@@ -206,6 +286,7 @@ export const SingleLabelModal: React.FC<SingleLabelModalProps> = ({
               body {
                 margin: 0 !important;
                 padding: 0 !important;
+                background: white !important;
               }
             }
           `
@@ -215,39 +296,27 @@ export const SingleLabelModal: React.FC<SingleLabelModalProps> = ({
           {labelsArray.map((_, idx) => (
             <div
               key={idx}
-              className="label-sticker text-black bg-white flex flex-col justify-between items-center text-center overflow-hidden"
               style={{
-                width: `${currentSize.w}mm`,
-                height: `${currentSize.h}mm`,
-                padding: '1.5mm',
-                boxSizing: 'border-box',
                 pageBreakAfter: 'always',
                 breakAfter: 'page'
               }}
             >
-              <div style={{ fontSize: '8pt', fontWeight: '900', lineHeight: 1, fontFamily: 'monospace' }}>
-                {settings.storeName}
-              </div>
-              <div style={{ fontSize: '7pt', fontWeight: 'bold', lineHeight: 1.1, maxHeight: '3.5em', overflow: 'hidden' }}>
-                {product.name}
-              </div>
-              {product.model && (
-                <div style={{ fontSize: '6pt', color: '#333', lineHeight: 1, fontFamily: 'monospace' }}>
-                  {product.model}
-                </div>
-              )}
-              <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
-                <BarcodeRenderer
-                  value={product.internalBarcode}
-                  height={currentSize.h * 1.05}
-                  width={1.2}
-                  fontSize={8}
-                  displayValue={true}
-                />
-              </div>
-              <div style={{ fontSize: '8.5pt', fontWeight: '900', fontFamily: 'monospace', lineHeight: 1 }}>
-                {formatEGP(product.price)}
-              </div>
+              <PhoneBoxLabel
+                product={product}
+                settings={settings}
+                widthMm={currentSize.w}
+                heightMm={currentSize.h}
+                template={template}
+                showPrice={showPrice}
+                showSpecs={showSpecs}
+                showModel={showModel}
+                showBarcodeText={true}
+                showStoreName={settings.labelShowStoreName ?? true}
+                showSku={settings.labelShowSku ?? true}
+                showWarranty={settings.labelShowWarranty ?? true}
+                showSerial={settings.labelShowSerial ?? true}
+                isPrintVersion={true}
+              />
             </div>
           ))}
         </div>

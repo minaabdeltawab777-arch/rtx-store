@@ -1,6 +1,6 @@
 import React from 'react';
 import { Product, Invoice, StoreSettings } from '../types';
-import { formatEGP, formatDateArabic, formatTimeOnly } from '../utils/formatters';
+import { formatEGP, formatDateArabic, formatTimeOnly, getCairoDateString } from '../utils/formatters';
 import {
   TrendingUp,
   ShoppingCart,
@@ -34,11 +34,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onOpenProductForm,
   onSelectInvoice
 }) => {
-  const now = new Date();
-  const todayStr = now.toISOString().split('T')[0];
+  const cairoToday = getCairoDateString(new Date());
 
   const todayCompletedInvoices = invoices.filter(
-    inv => inv.status === 'completed' && inv.createdAt.split('T')[0] === todayStr
+    inv => inv.status === 'completed' && getCairoDateString(new Date(inv.createdAt)) === cairoToday
   );
 
   const todaySalesTotal = todayCompletedInvoices.reduce((sum, i) => sum + i.total, 0);

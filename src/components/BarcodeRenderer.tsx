@@ -18,15 +18,15 @@ interface BarcodeRendererProps {
 export const BarcodeRenderer: React.FC<BarcodeRendererProps> = ({
   value,
   format = 'CODE128',
-  width = 1.8,
-  height = 42,
+  width = 1.4,
+  height = 36,
   displayValue = true,
-  fontSize = 13,
-  fontOptions = '',
+  fontSize = 11,
+  fontOptions = 'bold',
   className = '',
   lineColor = '#000000',
   background = 'transparent',
-  margin = 4
+  margin = 2
 }) => {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +35,7 @@ export const BarcodeRenderer: React.FC<BarcodeRendererProps> = ({
     if (!svgRef.current || !value) return;
 
     try {
-      JsBarcode(svgRef.current, value, {
+      JsBarcode(svgRef.current, String(value).trim(), {
         format: format as any,
         width,
         height,
@@ -43,18 +43,25 @@ export const BarcodeRenderer: React.FC<BarcodeRendererProps> = ({
         font: 'JetBrains Mono, monospace, sans-serif',
         fontOptions,
         fontSize,
-        textMargin: 3,
+        textMargin: 2,
         lineColor,
         background,
         margin,
         valid: (valid) => {
           if (!valid) {
-            setError('قيمة الباركود غير صالحة للترميز');
+            setError('قيمة الباركود غير صالحة');
           } else {
             setError(null);
           }
         }
       });
+      // Ensure SVG is cleanly contained and centered
+      if (svgRef.current) {
+        svgRef.current.style.maxWidth = '100%';
+        svgRef.current.style.height = 'auto';
+        svgRef.current.style.display = 'block';
+        svgRef.current.style.margin = '0 auto';
+      }
     } catch (e: any) {
       console.warn('JsBarcode render error:', e);
       setError('تعذر رسم الباركود');
@@ -63,15 +70,15 @@ export const BarcodeRenderer: React.FC<BarcodeRendererProps> = ({
 
   if (error) {
     return (
-      <div className={`p-2 bg-red-950/40 border border-red-500/30 text-red-400 text-xs rounded text-center ${className}`}>
+      <div className={`p-1 bg-red-950/40 border border-red-500/30 text-red-400 text-[10px] rounded text-center ${className}`}>
         {error} ({value})
       </div>
     );
   }
 
   return (
-    <div className={`flex flex-col items-center justify-center ${className}`}>
-      <svg ref={svgRef} className="max-w-full overflow-visible" />
+    <div className={`flex flex-col items-center justify-center w-full overflow-hidden ${className}`}>
+      <svg ref={svgRef} className="max-w-full h-auto overflow-visible select-none" />
     </div>
   );
 };

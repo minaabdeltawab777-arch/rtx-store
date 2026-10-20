@@ -34,7 +34,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   productToEdit,
   categories
 }) => {
-  const isEditing = Boolean(productToEdit);
+  const isEditing = Boolean(productToEdit && productToEdit.id);
 
   // Form states
   const [name, setName] = useState('');
@@ -146,21 +146,50 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
     setCustomSpecs(prev => prev.filter((_, i) => i !== index));
   };
 
-  // Image Upload handler
+  // Image Upload handler with automatic canvas resizing to keep storage lightweight
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      alert('حجم الصورة كبير جداً، يرجى اختيار صورة أقل من 2 ميجابايت.');
+    if (file.size > 5 * 1024 * 1024) {
+      alert('حجم الصورة كبير جداً، يرجى اختيار صورة أقل من 5 ميجابايت.');
       return;
     }
 
     const reader = new FileReader();
     reader.onload = ev => {
-      if (typeof ev.target?.result === 'string') {
-        setImage(ev.target.result);
-      }
+      const src = ev.target?.result as string;
+      if (!src) return;
+
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 600;
+        let w = img.width;
+        let h = img.height;
+        if (w > maxDim || h > maxDim) {
+          if (w > h) {
+            h = Math.round((h * maxDim) / w);
+            w = maxDim;
+          } else {
+            w = Math.round((w * maxDim) / h);
+            h = maxDim;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+          setImage(canvas.toDataURL('image/jpeg', 0.8));
+        } else {
+          setImage(src);
+        }
+      };
+      img.onerror = () => setImage(src);
+      img.src = src;
     };
     reader.readAsDataURL(file);
   };
@@ -193,8 +222,15 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       return;
     }
 
+    // Validate Code 128 ASCII compatibility
+    if (!/^[\x20-\x7E]+$/.test(internalBarcode.trim())) {
+      setErrorMsg('الباركود يجب أن يحتوي على أحرف وأرقام ورموز إنجليزية فقط (Code 128 القياسي بدون حروف عربية)');
+      return;
+    }
+
     // Check barcode duplication
-    if (storage.isBarcodeDuplicate(internalBarcode, productToEdit?.id)) {
+    const excludeId = isEditing ? productToEdit?.id : undefined;
+    if (storage.isBarcodeDuplicate(internalBarcode, excludeId)) {
       setErrorMsg(`الباركود الداخلي (${internalBarcode}) مستخدم بالفعل لمنتج آخر!`);
       return;
     }

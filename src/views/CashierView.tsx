@@ -3,6 +3,7 @@ import { Product, Category, InvoiceItem, Invoice, StoreSettings } from '../types
 import { formatEGP } from '../utils/formatters';
 import { sound } from '../services/sound';
 import { storage } from '../services/storage';
+import { CategoryIllustration } from '../components/CategoryIllustration';
 import {
   Search,
   ScanLine,
@@ -31,6 +32,7 @@ interface CashierViewProps {
   settings: StoreSettings;
   onCheckoutSuccess: (invoice: Invoice) => void;
   onScanUnknownBarcode?: (barcode: string) => void;
+  scannedBarcodeEvent?: { code: string; timestamp: number } | null;
 }
 
 export const CashierView: React.FC<CashierViewProps> = ({
@@ -38,7 +40,8 @@ export const CashierView: React.FC<CashierViewProps> = ({
   categories,
   settings,
   onCheckoutSuccess,
-  onScanUnknownBarcode
+  onScanUnknownBarcode,
+  scannedBarcodeEvent
 }) => {
   // Search & Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -54,6 +57,7 @@ export const CashierView: React.FC<CashierViewProps> = ({
   const [customerPhone, setCustomerPhone] = useState('');
   const [notes, setNotes] = useState('');
   const [showCustomerFields, setShowCustomerFields] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Notifications / Scanner feedback
   const [scanNotice, setScanNotice] = useState<{ type: 'success' | 'warning'; message: string } | null>(null);
@@ -81,7 +85,22 @@ export const CashierView: React.FC<CashierViewProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [cartItems]);
+  }, [cartItems, isSubmitting]);
+
+  // Handle global scanner scan events directly into the cart
+  useEffect(() => {
+    if (!scannedBarcodeEvent?.code) return;
+    const foundProduct = storage.findProductByBarcode(scannedBarcodeEvent.code);
+    if (foundProduct) {
+      addProductToCart(foundProduct);
+      sound.playScanSuccess();
+      setScanNotice({
+        type: 'success',
+        message: `تم إضافة (${foundProduct.name}) إلى السلة بالمسح الضوئي`
+      });
+      setTimeout(() => setScanNotice(null), 3000);
+    }
+  }, [scannedBarcodeEvent]);
 
   // Barcode / Search Enter handler
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -237,44 +256,55 @@ export const CashierView: React.FC<CashierViewProps> = ({
 
   // Checkout Execution
   const handleCheckout = () => {
+    if (isSubmitting) return;
+
     if (cartItems.length === 0) {
       alert('سلة البيع فارغة! قم بمسح أو إضافة منتجات أولاً.');
       return;
     }
 
-    const finalPaid = amountReceived === '' ? total : paid;
+    setIsSubmitting(true);
 
-    const result = storage.completeCheckout({
-      items: cartItems,
-      subtotal,
-      discount: invoiceDiscount,
-      total,
-      amountReceived: finalPaid,
-      changeToReturn: finalPaid > total ? finalPaid - total : 0,
-      paymentMethod,
-      customerName: customerName.trim() || undefined,
-      customerPhone: customerPhone.trim() || undefined,
-      cashierName: settings.cashierDisplayName,
-      notes: notes.trim() || undefined,
-      format: settings.defaultReceiptFormat || 'thermal80',
-      status: 'completed'
-    });
+    try {
+      // For non-cash payment (card, bank transfer), amount received defaults to exact total
+      const finalPaid = paymentMethod === 'cash'
+        ? (amountReceived === '' ? total : paid)
+        : total;
 
-    if (result.success && result.invoice) {
-      sound.playCheckoutSuccess();
-      onCheckoutSuccess(result.invoice);
-      // Reset cart
-      setCartItems([]);
-      setInvoiceDiscount(0);
-      setAmountReceived('');
-      setCustomerName('');
-      setCustomerPhone('');
-      setNotes('');
-      setShowCustomerFields(false);
-      searchInputRef.current?.focus();
-    } else {
-      sound.playScanError();
-      alert(result.error || 'فشل إتمام عملية البيع');
+      const result = storage.completeCheckout({
+        items: cartItems,
+        subtotal,
+        discount: invoiceDiscount,
+        total,
+        amountReceived: finalPaid,
+        changeToReturn: finalPaid > total ? finalPaid - total : 0,
+        paymentMethod,
+        customerName: customerName.trim() || undefined,
+        customerPhone: customerPhone.trim() || undefined,
+        cashierName: settings.cashierDisplayName,
+        notes: notes.trim() || undefined,
+        format: settings.defaultReceiptFormat || 'thermal80',
+        status: 'completed'
+      });
+
+      if (result.success && result.invoice) {
+        sound.playCheckoutSuccess();
+        onCheckoutSuccess(result.invoice);
+        // Reset cart
+        setCartItems([]);
+        setInvoiceDiscount(0);
+        setAmountReceived('');
+        setCustomerName('');
+        setCustomerPhone('');
+        setNotes('');
+        setShowCustomerFields(false);
+        searchInputRef.current?.focus();
+      } else {
+        sound.playScanError();
+        alert(result.error || 'فشل إتمام عملية البيع');
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -567,11 +597,11 @@ export const CashierView: React.FC<CashierViewProps> = ({
           {/* Primary Action Button */}
           <button
             onClick={handleCheckout}
-            disabled={cartItems.length === 0}
+            disabled={cartItems.length === 0 || isSubmitting}
             className="w-full py-3.5 bg-[#76b900] hover:bg-[#88d400] disabled:opacity-40 disabled:pointer-events-none text-black font-black text-sm rounded-xl flex items-center justify-center gap-2 shadow-xl shadow-[#76b900]/20 transition-all cursor-pointer"
           >
             <Printer className="w-4 h-4" />
-            إتمام البيع والطباعة (F9)
+            {isSubmitting ? 'جاري تسجيل الفاتورة والطباعة...' : 'إتمام البيع والطباعة (F9)'}
           </button>
         </div>
       </div>
@@ -707,7 +737,7 @@ export const CashierView: React.FC<CashierViewProps> = ({
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                           />
                         ) : (
-                          <Layers className="w-6 h-6 text-slate-600" />
+                          <CategoryIllustration categoryId={product.categoryId} size={40} />
                         )}
                       </div>
 

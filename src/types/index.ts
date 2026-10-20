@@ -114,16 +114,23 @@ export interface StoreSettings {
   receiptFooter: string;
   defaultReceiptFormat: 'thermal80' | 'a4';
   
-  // Barcode Label defaults
+  // Barcode & QR Label defaults
   defaultLabelPreset: '40x25' | '50x30' | '60x40' | '70x50' | 'custom';
   customLabelWidthMm: number;
   customLabelHeightMm: number;
+  labelTemplate: 'phone_box' | 'barcode_first' | 'dual_code' | 'compact';
+  qrMode: 'online' | 'offline';
   labelShowLogo: boolean;
   labelShowStoreName: boolean;
   labelShowPrice: boolean;
   labelShowSku: boolean;
   labelShowModel: boolean;
   labelShowBarcodeText: boolean;
+  labelShowQR: boolean;
+  labelShowSpecs: boolean;
+  labelShowWarranty: boolean;
+  labelShowSerial: boolean;
+  labelFontSize: 'compact' | 'standard' | 'large';
   labelSheetColumns: number; // 1 for roll, 2-5 for A4 sheet
   
   // Scanner & POS defaults

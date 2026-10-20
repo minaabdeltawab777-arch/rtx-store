@@ -2,6 +2,26 @@
 <html lang="ar" dir="rtl">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      (function() {
+        try {
+          var originalFetch = window.fetch;
+          var currentFetch = typeof originalFetch === 'function' ? originalFetch.bind(window) : originalFetch;
+          Object.defineProperty(window, 'fetch', {
+            get: function() {
+              return currentFetch;
+            },
+            set: function(newFetch) {
+              currentFetch = newFetch;
+            },
+            configurable: true,
+            enumerable: true
+          });
+        } catch (e) {
+          // ignore
+        }
+      })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>RTX STORE — نظام الكاشير والباركود والمخزون</title>
     <meta name="description" content="نظام كاشير وإدارة مخزون وطباعة استيكرات الباركود الاحترافية لمتاجر أجهزة الكمبيوتر واللابتوب وملحقاتها في مصر مع دعم مسدس الباركود والفواتير الحرارية." />

@@ -86,6 +86,8 @@ export default function App() {
     }
   };
 
+  const [scannedBarcode, setScannedBarcode] = useState<{ code: string; timestamp: number } | null>(null);
+
   // Global USB Barcode Scanner Hook
   useBarcodeScanner({
     enabled: true,
@@ -96,8 +98,8 @@ export default function App() {
 
       if (product) {
         sound.playScanSuccess();
+        setScannedBarcode({ code: scannedCode, timestamp: Date.now() });
         if (activeTab !== 'cashier') {
-          // If not in cashier, switch or show product
           setActiveTab('cashier');
         }
       } else {
@@ -189,6 +191,40 @@ export default function App() {
         </div>
       </header>
 
+      {/* Mobile Navigation Dropdown */}
+      {mobileMenuOpen && (
+        <div className="no-print lg:hidden bg-[#0d1017] border-b border-[#252c3e] p-3 space-y-1 shadow-2xl z-40 sticky top-[61px]">
+          {NAV_ITEMS.map(item => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => {
+                  setActiveTab(item.id as ActiveTab);
+                  setMobileMenuOpen(false);
+                }}
+                className={`w-full px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-between transition-all ${
+                  isActive
+                    ? 'bg-[#76b900] text-black font-black'
+                    : 'text-slate-300 hover:bg-[#161a25]'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Icon className="w-4 h-4" />
+                  <span>{item.label}</span>
+                </div>
+                {item.badge !== undefined && item.badge > 0 && (
+                  <span className="text-[10px] bg-black/20 px-2 py-0.5 rounded-full font-mono font-bold">
+                    {item.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* ================= MAIN NAVIGATION BAR ================= */}
       <nav className="no-print bg-[#0f121a] border-b border-[#1f2533] px-4 sm:px-6 overflow-x-auto scrollbar-none sticky top-[61px] z-30">
         <div className="flex items-center gap-1 sm:gap-2 py-2">
@@ -256,6 +292,7 @@ export default function App() {
             products={products}
             categories={categories}
             settings={settings}
+            scannedBarcodeEvent={scannedBarcode}
             onCheckoutSuccess={(inv) => {
               refreshAllData();
               setActiveReceipt(inv);

@@ -127,26 +127,54 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         const content = ev.target?.result as string;
         if (!content) return;
 
-        const lines = content.split('\n').filter(l => l.trim().length > 0);
+        // Robust CSV line parser supporting quoted fields and commas
+        const parseCSVLine = (line: string): string[] => {
+          const result: string[] = [];
+          let cur = '';
+          let inQuotes = false;
+          for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+              if (inQuotes && line[i + 1] === '"') {
+                cur += '"';
+                i++;
+              } else {
+                inQuotes = !inQuotes;
+              }
+            } else if (char === ',' && !inQuotes) {
+              result.push(cur.trim());
+              cur = '';
+            } else {
+              cur += char;
+            }
+          }
+          result.push(cur.trim());
+          return result;
+        };
+
+        const lines = content.split(/\r?\n/).filter(l => l.trim().length > 0);
         if (lines.length <= 1) {
-          alert('ملف CSV فارغ أو لا يحتوي على بيانات');
+          alert('ملف CSV فارغ أو لا يحتوي على صفوف بيانات');
           return;
         }
 
         // Parse lines
         let addedCount = 0;
         for (let i = 1; i < lines.length; i++) {
-          const cols = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
-          if (cols.length >= 4) {
+          const cols = parseCSVLine(lines[i]);
+          if (cols.length >= 1 && cols[0]) {
             const prodName = cols[0];
             const brand = cols[1] || '';
             const model = cols[2] || '';
-            let barcode = cols[3];
+            let barcode = cols[3] || '';
             const mfgBarcode = cols[4] || '';
             const sku = cols[5] || `SKU-${Date.now().toString().slice(-6)}`;
             const price = parseFloat(cols[6]) || 100;
-            const stockQty = parseInt(cols[8]) || 1;
+            const costPrice = cols[7] ? parseFloat(cols[7]) : undefined;
+            const stockQty = cols[8] !== undefined && cols[8] !== '' ? parseInt(cols[8]) || 0 : 1;
+            const conditionVal = cols[9] === 'used' || cols[9] === 'renewed' ? cols[9] : 'new';
 
+            // Generate unique internal barcode if missing or duplicate
             if (!barcode || storage.isBarcodeDuplicate(barcode)) {
               barcode = storage.generateUniqueBarcode();
             }
@@ -162,7 +190,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               manufacturerBarcode: mfgBarcode || undefined,
               barcodeToUse: 'internal',
               price,
-              condition: 'new',
+              costPrice,
+              condition: conditionVal,
               stockTracking: true,
               stockQuantity: stockQty,
               specs: {},
@@ -178,6 +207,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
         onRefreshData();
         setImportStatus(`✓ تم استيراد ${addedCount} منتج بنجاح وتوليد الباركودات المطلوبة!`);
+        if (csvInputRef.current) csvInputRef.current.value = '';
         setTimeout(() => setImportStatus(null), 5000);
       } catch (err: any) {
         alert('حدث خطأ أثناء قراءة ملف CSV');
@@ -359,16 +389,31 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             </div>
 
             <div>
+              <label className="text-xs text-slate-300 block mb-1">نمط استيكر الباركود الافتراضي:</label>
+              <select
+                value={formData.labelTemplate || 'phone_box'}
+                onChange={e => handleInputChange('labelTemplate', e.target.value as any)}
+                className="w-full bg-[#0d1017] border border-[#272f44] text-white text-xs rounded-xl px-3 py-2.5 focus:border-[#76b900] focus:outline-none font-semibold"
+              >
+                <option value="phone_box">نمط علبة الهواتف والأجهزة (بيانات + باركود + مواصفات)</option>
+                <option value="barcode_first">الباركود البارز أولاً (باركود بالأعلى ثم بياناته)</option>
+                <option value="compact">مختصر للمقاسات الصغيرة والإكسسوارات</option>
+                <option value="dual_code">مزدوج (باركود خطي + رمز QR جانبي للموبايل)</option>
+              </select>
+            </div>
+
+            <div>
               <label className="text-xs text-slate-300 block mb-1">مقاس الاستيكر الافتراضي:</label>
               <select
                 value={formData.defaultLabelPreset}
                 onChange={e => handleInputChange('defaultLabelPreset', e.target.value)}
                 className="w-full bg-[#0d1017] border border-[#272f44] text-white text-xs rounded-xl px-3 py-2.5 focus:border-[#76b900] focus:outline-none font-semibold"
               >
-                <option value="40x25">40 × 25 مم</option>
-                <option value="50x30">50 × 30 مم (موصى به)</option>
-                <option value="60x40">60 × 40 مم</option>
-                <option value="70x50">70 × 50 مم</option>
+                <option value="40x25">40 × 25 مم (إكسسوارات)</option>
+                <option value="50x25">50 × 25 مم (شائع)</option>
+                <option value="50x30">50 × 30 مم (قياسي / موصى به)</option>
+                <option value="60x40">60 × 40 مم (كبير شامل)</option>
+                <option value="70x50">70 × 50 مم (واسع)</option>
               </select>
             </div>
 

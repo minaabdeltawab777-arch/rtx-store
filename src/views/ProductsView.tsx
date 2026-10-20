@@ -5,6 +5,7 @@ import { storage } from '../services/storage';
 import { BarcodeRenderer } from '../components/BarcodeRenderer';
 import { ProductFormModal } from '../components/ProductFormModal';
 import { SingleLabelModal } from '../components/SingleLabelModal';
+import { CategoryIllustration } from '../components/CategoryIllustration';
 import {
   Search,
   Plus,
@@ -50,6 +51,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [singleLabelProduct, setSingleLabelProduct] = useState<Product | null>(null);
+  const [previewBarcodeProduct, setPreviewBarcodeProduct] = useState<Product | null>(null);
 
   // Quick Stock Adjustment modal state
   const [stockAdjustProduct, setStockAdjustProduct] = useState<Product | null>(null);
@@ -331,7 +333,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                                     className="w-full h-full object-cover"
                                   />
                                 ) : (
-                                  <Layers className="w-5 h-5 text-slate-600" />
+                                  <CategoryIllustration categoryId={product.categoryId} size={28} />
                                 )}
                               </div>
                               <div className="min-w-0 max-w-xs">
@@ -353,9 +355,15 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                           {/* Barcode column with live vector thumbnail */}
                           <td className="py-3 px-4">
                             <div className="flex flex-col items-start">
-                              <span className="font-mono font-bold text-white bg-[#0d1017] px-2 py-0.5 rounded border border-[#272f44] text-[11px]">
-                                {product.internalBarcode}
-                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setPreviewBarcodeProduct(product)}
+                                className="font-mono font-bold text-white bg-[#0d1017] hover:bg-[#1a2233] hover:text-[#76b900] px-2 py-0.5 rounded border border-[#272f44] text-[11px] flex items-center gap-1 transition-colors cursor-pointer"
+                                title="عرض ورسم الباركود"
+                              >
+                                <span>{product.internalBarcode}</span>
+                                <Eye className="w-3 h-3 text-slate-500" />
+                              </button>
                               {product.manufacturerBarcode && (
                                 <span className="text-[10px] text-slate-500 font-mono mt-0.5">
                                   كرتونة: {product.manufacturerBarcode}
@@ -678,6 +686,65 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Barcode Quick Preview Modal */}
+      {previewBarcodeProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-[#12151e] border border-[#262c3d] rounded-2xl w-full max-w-sm p-5 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#262c3d]">
+              <div>
+                <h3 className="text-sm font-bold text-white">معاينة باركود المنتج (Code 128)</h3>
+                <p className="text-[10px] text-slate-400 truncate max-w-[220px]">{previewBarcodeProduct.name}</p>
+              </div>
+              <button
+                onClick={() => setPreviewBarcodeProduct(null)}
+                className="text-slate-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="bg-white p-4 rounded-xl flex flex-col items-center justify-center shadow-inner">
+              <BarcodeRenderer
+                value={previewBarcodeProduct.internalBarcode}
+                height={55}
+                width={1.6}
+                fontSize={12}
+                displayValue={true}
+              />
+            </div>
+
+            <div className="space-y-1.5 text-xs text-slate-300">
+              <div className="flex justify-between font-mono">
+                <span className="text-slate-400">الباركود الداخلي:</span>
+                <span className="font-bold text-[#76b900]">{previewBarcodeProduct.internalBarcode}</span>
+              </div>
+              <div className="flex justify-between font-mono">
+                <span className="text-slate-400">كود SKU:</span>
+                <span>{previewBarcodeProduct.sku}</span>
+              </div>
+              <div className="flex justify-between font-mono">
+                <span className="text-slate-400">سعر البيع:</span>
+                <span className="font-bold">{formatEGP(previewBarcodeProduct.price)}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#262c3d]">
+              <button
+                type="button"
+                onClick={() => {
+                  const prod = previewBarcodeProduct;
+                  setPreviewBarcodeProduct(null);
+                  setSingleLabelProduct(prod);
+                }}
+                className="w-full py-2 bg-[#76b900] hover:bg-[#88d400] text-black font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                طباعة هذا الباركود
+              </button>
+            </div>
           </div>
         </div>
       )}
