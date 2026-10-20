@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+@layer base {
+  * {
+    border-color: #262a36;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0f1117;
+}
+::-webkit-scrollbar-thumb {
+  background: #272d3b;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #76b900;
+}
+
+/* Print specific styles for barcode stickers and thermal receipts */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  
+  /* Hide all screen interface elements when printing */
+  .no-print, nav, header, aside, .sidebar, .screen-only, button:not(.keep-print) {
+    display: none !important;
+  }
+
+  /* Show print container exclusively */
+  .print-area {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Thermal 80mm receipt */
+  .thermal-receipt-print {
+    width: 78mm !important;
+    max-width: 78mm !important;
+    margin: 0 auto !important;
+    padding: 2mm !important;
+    font-family: 'Cairo', 'Courier New', monospace !important;
+    font-size: 11px !important;
+    line-height: 1.3 !important;
+    color: black !important;
+    background: white !important;
+  }
+
+  /* A4 invoice print */
+  .a4-invoice-print {
+    width: 100% !important;
+    max-width: 210mm !important;
+    margin: 0 auto !important;
+    padding: 10mm !important;
+    font-family: 'Cairo', sans-serif !important;
+    color: black !important;
+    background: white !important;
+  }
+
+  /* Page break rules for labels */
+  .label-page-break {
+    page-break-after: always;
+    break-after: page;
+  }
+}

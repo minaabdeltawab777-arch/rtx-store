@@ -1,0 +1,8 @@
+{
+  "name": "RTX STORE — نظام الكاشير والباركود والمخزون",
+  "description": "نظام كاشير وإدارة مخزون وطباعة استيكرات الباركود الاحترافية لمتاجر أجهزة الكمبيوتر واللابتوب وملحقاتها في مصر مع دعم مسدس الباركود والفواتير الحرارية.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

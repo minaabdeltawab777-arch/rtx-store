@@ -1,0 +1,935 @@
+# RTX STORE — Ultimate Arabic POS, Inventory Catalog & Barcode Label System
+
+## ROLE
+
+Act as a senior full-stack software engineer, database architect, barcode/POS specialist, and premium UI/UX designer.
+
+Build a complete, functional, production-oriented Arabic web application named RTX STORE for a computer hardware, laptop, MacBook, monitor, and accessories store in Egypt.
+
+I work as a cashier employee. I need full practical control over the product catalog within this application, but I do NOT need a complicated owner-level ERP system, supplier accounting, payroll, rent tracking, or business financial management.
+
+The application must make my daily work significantly faster and easier.
+
+My daily workflow should be:
+
+1. Add a product and enter its actual specifications and selling price.
+2. Automatically generate a unique internal barcode for that product.
+3. Print a professional barcode sticker and attach it to the physical product.
+4. Scan the barcode when a customer wants to purchase the product.
+5. Instantly retrieve the exact saved product, specifications, and current selling price.
+6. Add products to the invoice, complete the sale, and print the customer receipt.
+7. View my daily sales and reprint previous invoices whenever needed.
+
+**The most important requirement is that this must be an actual working application, not a static mockup, a landing page, or a dashboard filled with fake data.**
+
+Inspect the existing project, files, framework, and dependencies first. If an RTX Store project already exists, extend and improve it without deleting working functionality or unnecessarily rebuilding the application.
+
+Implement the application directly in the available environment.
+
+---
+
+# 1. BRANDING AND PREMIUM UI/UX
+
+Create a premium commercial interface branded RTX STORE.
+
+Visual direction:
+
+- Full Arabic RTL support throughout the application.
+- Egyptian Pound currency formatting.
+- Premium dark gaming aesthetic.
+- Black and charcoal backgrounds.
+- Elegant dark-gray cards and borders.
+- NVIDIA-inspired green accent color.
+- High-contrast white text.
+- Cairo or Tajawal typography with appropriate fallbacks.
+- Professional icons, smooth transitions, and subtle animations.
+- Clear hierarchy and generous spacing.
+- Responsive desktop, tablet, and mobile layouts.
+- Optimize the cashier experience for a Windows desktop at a retail checkout counter.
+- Optimize essential workflows for mouse, keyboard, and USB barcode scanner operation.
+
+The design must look like a premium professional point-of-sale product, not a generic admin dashboard.
+
+Create a professional RTX STORE text logo and allow the user to upload a replacement logo.
+
+Keep the application fast and uncluttered. Do not sacrifice cashier speed for unnecessary visual effects.
+
+## Main navigation
+
+Create these sections:
+
+1. لوحة التحكم.
+2. الكاشير.
+3. المنتجات والمخزون.
+4. الباركود وطباعة الاستيكرات.
+5. الفواتير السابقة.
+6. مبيعات اليوم.
+7. الإعدادات والنسخ الاحتياطي.
+
+Every navigation link and action must work.
+
+All interface text, form labels, buttons, notifications, validation messages, and print layouts should be Arabic-first and RTL.
+
+---
+
+# 2. COMPLETE PRODUCT CATALOG CONTROL
+
+I must be able to manage every product myself without depending on a developer to change the code.
+
+Create a full product management center.
+
+Allow me to:
+
+- Add unlimited products within reasonable storage limits.
+- Edit any saved product.
+- Change the price at any time.
+- Add, edit, and remove technical specifications.
+- Upload, replace, or remove product images.
+- Change brand, model, category, and condition.
+- Assign or change a product code.
+- Generate, regenerate when appropriate, and print product barcodes.
+- Change stock quantities when stock tracking is enabled.
+- Duplicate a product to create a similar item quickly.
+- Activate, deactivate, archive, or delete products.
+- Search and filter products instantly.
+- Change product categories and reorder them.
+- Import and export products.
+- Print labels for one product or many products in bulk.
+
+No real product should be hardcoded into the application's source code.
+
+The default catalog must be editable and must not be overwritten on startup.
+
+## Product fields
+
+Every product can contain:
+
+- اسم المنتج.
+- الماركة.
+- الموديل.
+- التصنيف.
+- كود المنتج SKU.
+- الباركود الداخلي.
+- باركود الشركة المصنعة, if supplied.
+- سعر البيع بالجنيه المصري.
+- صورة المنتج.
+- حالة المنتج: جديد، مستعمل، مجدد.
+- تتبع المخزون: مفعل أو غير مفعل.
+- الكمية المتاحة, if stock tracking is enabled.
+- الحد الأدنى للمخزون, optional.
+- مدة الضمان, optional.
+- وصف مختصر.
+- ملاحظات إضافية.
+- تاريخ الإضافة والتعديل.
+
+Keep required fields minimal so I can add a mouse or cable quickly. Detailed computer products must support much richer specifications.
+
+When stock tracking is disabled, do not invent a stock quantity.
+
+---
+
+# 3. DYNAMIC HARDWARE SPECIFICATIONS
+
+Create an intelligent, editable specification editor that changes according to product category.
+
+## Laptops
+
+Support:
+
+- Manufacturer and model.
+- Exact CPU model.
+- Processor generation, when known.
+- Integrated GPU.
+- Dedicated GPU.
+- GPU memory.
+- RAM capacity and type.
+- Storage capacity and type.
+- Display size.
+- Display resolution.
+- Refresh rate.
+- Panel type.
+- Operating system.
+- Condition.
+- Warranty.
+- Battery health for used devices, when known.
+- Custom specifications.
+
+## MacBooks
+
+Support:
+
+- MacBook Air or MacBook Pro.
+- Model and release year.
+- Apple chip.
+- Unified memory.
+- SSD capacity.
+- Screen size.
+- Battery health, if applicable and provided.
+- Condition and warranty.
+- Custom specifications.
+
+## Desktop PCs
+
+Support:
+
+- CPU.
+- GPU.
+- Motherboard.
+- RAM.
+- Storage.
+- Power supply.
+- PC case.
+- Cooling.
+- Operating system.
+- Custom specifications.
+
+## Monitors
+
+Support:
+
+- Brand and model.
+- Screen size.
+- Resolution.
+- Panel technology.
+- Refresh rate.
+- Response time.
+- Connectivity.
+- Curved or flat display.
+- Warranty.
+- Custom specifications.
+
+## Accessories
+
+Support:
+
+- Brand.
+- Model.
+- Connection type.
+- Compatibility.
+- Switch type where applicable.
+- Wireless or wired.
+- Important specifications.
+- Warranty.
+- Custom specifications.
+
+## Custom specifications
+
+I must be able to add any specification that does not exist in the predefined fields.
+
+For example:
+
+- اللون: أبيض.
+- نوع السويتش: Red.
+- التوافق: MacBook Air.
+- المعالج: Intel Core i7.
+- كارت الشاشة: RTX 4060.
+- معدل التحديث: 180Hz.
+
+These are examples of user-entered values, not assumed specifications of real products.
+
+Allow me to add, rename, edit, remove, and reorder custom specification fields.
+
+Show only relevant predefined specifications, but never prevent me from adding custom fields.
+
+Never invent specifications, prices, available stock, or warranty terms. Missing specifications should be marked as "غير محدد" or omitted.
+
+---
+
+# 4. UNIQUE BARCODE SYSTEM — TOP PRIORITY
+
+Build a real barcode management system integrated into product management, the cashier, and printing.
+
+This feature is essential and must not be implemented as a decorative barcode image.
+
+## Automatic barcode generation
+
+Whenever I create a new product:
+
+1. Generate a unique internal barcode automatically.
+2. Store the barcode permanently against that product.
+3. Display it immediately on the product details page.
+4. Allow me to print a barcode label.
+5. Make the barcode searchable and scannable in the cashier.
+6. Preserve the same barcode when I edit the product name, price, image, or specifications.
+
+A barcode must never accidentally identify two different active products.
+
+Use **Code 128** as the recommended default for internally generated barcodes because it can represent suitable alphanumeric internal product identifiers.
+
+Generate the barcode value from a reliable, unique internal identifier or unique sequence. Validate uniqueness in the database.
+
+Do not regenerate an existing product's barcode on every page load or every edit.
+
+Do not use a QR code where an actual linear barcode is required.
+
+Do not claim an internally generated barcode is an official GS1 manufacturer barcode. If an EAN-13, UPC, or manufacturer barcode is supplied by the shop or product packaging, allow me to save and use it, validate its format where possible, and prevent conflicts.
+
+Provide clear handling when a supplied barcode is invalid or already assigned.
+
+## Barcode options for products
+
+Each product should have:
+
+- Internal barcode.
+- Product SKU.
+- Optional manufacturer barcode.
+- Barcode symbology.
+- Barcode value.
+- Barcode creation date.
+- Optional serial-number tracking for individual devices.
+
+Allow me to choose which saved barcode is used for printing or lookup.
+
+If a barcode is edited, warn me that existing physical labels may no longer match the current record. Never change barcodes silently.
+
+## Individual devices and serial numbers
+
+For expensive hardware such as laptops, MacBooks, GPUs, and monitors, optionally support individual serial numbers.
+
+Where individual-device tracking is enabled:
+
+- Preserve the product's general product barcode for model-level lookup.
+- Allow an additional unique barcode or label per physical unit.
+- Store the actual manufacturer serial number when supplied.
+- Allow the cashier to scan a unit to identify it.
+- Avoid treating two separately serialized devices as the same physical unit.
+
+Do not require serial-number tracking for ordinary cables, mice, or other low-cost accessories.
+
+---
+
+# 5. PROFESSIONAL BARCODE LABEL PRINTING
+
+Create a dedicated page called "طباعة الباركود والاستيكرات".
+
+I must be able to print barcode stickers on a compatible thermal label printer, as well as supported normal paper-label layouts.
+
+## Individual label printing
+
+From any product page, add a prominent button:
+
+"طباعة استيكر الباركود"
+
+Clicking it must open an actual label preview and printing workflow.
+
+## Bulk label printing
+
+Create a separate interface that allows me to:
+
+1. Search for a product.
+2. Select one product or multiple products.
+3. Enter the number of labels required for each product.
+4. Preview the resulting labels.
+5. Print all selected labels together.
+6. Reprint previous labels when needed.
+
+For example, if I receive ten identical mice, I should be able to select that mouse and print ten identical barcode labels without creating ten separate catalog products.
+
+If the products have different serial numbers, print the corresponding unit-specific labels when serial tracking is enabled.
+
+Allow me to print labels after adding a new product, when receiving products, or later from the catalog.
+
+Never increase or decrease inventory merely because labels were printed.
+
+## Label information
+
+Make label content configurable.
+
+Possible elements:
+
+- RTX STORE logo, optional.
+- Product name.
+- Short model identifier.
+- Selling price, optional.
+- Internal SKU, optional.
+- Barcode.
+- Human-readable barcode digits or value below the barcode.
+- Serial number, for serialized units when applicable.
+
+The barcode and its human-readable value must match the saved record exactly.
+
+Make the product name and model fit on small labels without overlapping the barcode.
+
+The barcode must have sufficient contrast, appropriate dimensions, and quiet zones so supported scanners can read it.
+
+Do not print a decorative barcode that fails to scan.
+
+## Adjustable label sizes
+
+Provide presets for common label sizes, including:
+
+- 40 × 25 mm.
+- 50 × 30 mm.
+- 60 × 40 mm.
+- 70 × 50 mm.
+
+Allow a custom width and height in millimeters.
+
+Allow configuration of:
+
+- Label width and height.
+- Page margins.
+- Horizontal and vertical gaps.
+- Number of columns on an A4 label sheet.
+- Label orientation.
+- Logo visibility.
+- Product-name visibility.
+- Price visibility.
+- SKU visibility.
+- Barcode dimensions.
+- Barcode text visibility.
+
+Support both single-label thermal printing and multiple-label sheet layouts where the printer and paper format permit it.
+
+Remember the last-used label settings.
+
+## Printing implementation
+
+Use a reliable barcode-generation library that is compatible with the existing project when necessary.
+
+Generate actual Code 128 barcode graphics as SVG or another reliable, print-ready vector representation.
+
+Implement print-specific CSS with accurate physical dimensions in millimeters and clean page breaks.
+
+Do not assume CSS alone can select or configure the physical printer's driver or force a particular printer setting.
+
+Explain which printer preferences must be configured in the browser or operating system.
+
+Include a print preview and a clear "طباعة الاستيكرات" action.
+
+Handle cancellation, empty selections, invalid dimensions, and printer-related errors gracefully.
+
+Verify that labels fit their intended dimensions as closely as the browser and printer environment permits.
+
+Do not claim a label is physically scannable without appropriate verification. Provide a practical test workflow.
+
+---
+
+# 6. USB BARCODE SCANNER INTEGRATION
+
+I want scanning to be much faster than searching manually.
+
+Support common USB barcode scanners that operate as keyboard input devices.
+
+Many such scanners enter the barcode characters followed by Enter or another configurable suffix.
+
+The cashier must be able to:
+
+1. Focus the barcode/search input automatically when appropriate.
+2. Scan a product barcode.
+3. Identify the product from the saved database immediately.
+4. Add the product to the current cart, or show the product details when in catalog mode.
+5. Increase the cart quantity appropriately if the same product is scanned repeatedly.
+6. Display a clear success message.
+7. Display a clear warning if the scanned barcode is unknown.
+8. Allow unknown barcodes to be registered or assigned to an existing product where appropriate.
+
+Provide settings for scanner suffix and scanning behavior when necessary.
+
+Do not rely on a specific scanner brand or proprietary SDK.
+
+Prevent accidental duplicate scan events when scanning one label.
+
+Do not intercept normal keystrokes while I am typing in unrelated text fields.
+
+## Scanning behavior
+
+Provide at least two modes:
+
+**Cashier mode:** Scanning a product adds it to the current invoice.
+
+**Catalog lookup mode:** Scanning a product opens its full details, including specifications, price, category, and availability.
+
+If a product has multiple barcode types, recognize all of its registered barcodes.
+
+When an unknown barcode is scanned, allow me to search the catalog or open a simple "ربط الباركود بمنتج" workflow.
+
+---
+
+# 7. FAST CASHIER / POINT OF SALE
+
+Build a cashier screen optimized for real retail work.
+
+## Product lookup
+
+Products must be retrievable by:
+
+- Scanning a barcode.
+- Product name.
+- Brand.
+- Model.
+- SKU.
+- Manufacturer barcode.
+- Any saved specification.
+- Category.
+
+Display useful results immediately without full page reloads.
+
+Each result should contain:
+
+- Product image.
+- Product name.
+- Model.
+- Main specifications.
+- Selling price.
+- Available quantity if stock tracking is enabled.
+- Add-to-invoice action.
+
+## Cart management
+
+Allow me to:
+
+- Add multiple products.
+- Change quantities.
+- Remove items.
+- Edit a line where appropriate.
+- Apply permitted discounts.
+- See unit prices and line totals.
+- See the total update instantly.
+- Clear the current draft after confirmation.
+
+Scanning the same general product barcode multiple times should increase its cart quantity when the product is not individually serialized.
+
+For serialized products, make the system identify and prevent selling the same individual unit twice.
+
+## Payment calculations
+
+Support:
+
+- Subtotal.
+- Item-level discount, if enabled.
+- Invoice-level discount, if enabled.
+- Final total.
+- Amount received.
+- Remaining amount.
+- Change to return.
+- Payment method.
+
+Payment methods:
+
+- نقدي.
+- بطاقة.
+- تحويل بنكي.
+- أخرى.
+
+Allow optional customer name, phone number, and notes.
+
+Use proper decimal arithmetic or a reliable currency-safe calculation strategy to avoid rounding problems.
+
+Never describe an unpaid remaining amount as change to return.
+
+## Checkout
+
+The primary action should be:
+
+"إتمام البيع والطباعة"
+
+On successful checkout:
+
+1. Validate the invoice.
+2. Validate tracked inventory.
+3. Save the invoice and its items.
+4. Save payment details.
+5. Update tracked inventory exactly once.
+6. Generate a unique invoice number.
+7. Preserve a historical snapshot of sold product data.
+8. Open the print workflow.
+9. Allow me to start a new invoice quickly.
+
+Prevent duplicate invoice creation on repeated clicks.
+
+If saving fails, communicate the failure clearly and do not falsely report a completed transaction.
+
+Do not deduct inventory until the sale is actually completed.
+
+Add practical keyboard shortcuts where appropriate.
+
+---
+
+# 8. PRODUCT CATEGORIES AND BRANDS
+
+Allow me to create and manage categories from the application.
+
+Start with editable categories such as:
+
+- لابتوبات.
+- MacBook.
+- أجهزة كمبيوتر PC.
+- شاشات.
+- كروت شاشة.
+- معالجات.
+- لوحات أم.
+- رامات.
+- وحدات تخزين.
+- باور سبلاي.
+- كيسات.
+- أنظمة تبريد.
+- كيبورد.
+- ماوس.
+- سماعات.
+- ماوس باد.
+- كابلات ومحولات.
+- شواحن.
+- بطاريات لابتوب.
+- إكسسوارات Apple.
+- طابعات.
+- شبكات.
+- إكسسوارات Gaming.
+- أخرى.
+
+These are starting categories, not a fixed list.
+
+Allow me to create, rename, reorder, archive, and delete categories.
+
+Prevent accidental product loss when deleting a category. Let me reassign its products or archive the category first.
+
+Allow management of brand names as well.
+
+---
+
+# 9. PRODUCT IMAGES
+
+Allow image uploads from my computer.
+
+Include:
+
+- Image preview before saving.
+- Replace and remove actions.
+- Product image display in cards, details, search results, and the catalog.
+- Image fallbacks for products without photos.
+- Basic file-size and format validation.
+
+Ensure images remain accessible after browser refresh or restart.
+
+Use suitable persistent storage and do not rely on temporary object URLs as permanent image references.
+
+If using cloud storage, configure it properly. If using local mode, use a reliable local persistence strategy and include images in a supported backup process.
+
+Do not automatically attach random Internet images to products.
+
+---
+
+# 10. INVENTORY
+
+Keep inventory simple and optional.
+
+I may not know the exact quantity of every product, so allow stock tracking to be enabled or disabled per product.
+
+When enabled:
+
+- Display current quantity.
+- Reduce quantity when a sale is completed.
+- Warn when quantity is low.
+- Prevent sales beyond available quantity unless explicitly permitted.
+- Record relevant stock adjustments.
+- Allow me to enter the received quantity when adding stock.
+- Provide a simple stock adjustment history.
+
+Barcode printing must never alter stock.
+
+If stock tracking is disabled, allow a product to be sold without showing fabricated quantities.
+
+Historical invoices must remain intact when stock changes.
+
+---
+
+# 11. PROFESSIONAL RECEIPTS AND INVOICES
+
+Create a proper Arabic RTL invoice and receipt system.
+
+Support:
+
+- 80mm thermal receipt format.
+- A4 invoice format.
+
+Every completed invoice must contain:
+
+- RTX STORE logo and name.
+- Store phone and address if configured.
+- Unique invoice number.
+- Date and time.
+- Product names.
+- Models and relevant specifications when appropriate.
+- Quantities.
+- Unit prices.
+- Line totals.
+- Subtotal.
+- Discounts.
+- Final total.
+- Amount received.
+- Remaining balance or change.
+- Payment method.
+- Customer details if provided.
+- Optional notes.
+- Configurable footer.
+
+Include working actions:
+
+- إتمام البيع والطباعة.
+- طباعة الفاتورة.
+- إعادة طباعة الفاتورة.
+- فاتورة جديدة.
+- إلغاء الفاتورة الحالية قبل إتمامها.
+
+Use print-specific CSS so the receipt does not include the sidebar, navigation, buttons, or unrelated interface.
+
+Ensure Arabic is displayed properly in the printed receipt.
+
+Provide a real downloadable PDF when PDF export is implemented. Do not substitute a fake download button.
+
+---
+
+# 12. INVOICE HISTORY
+
+Create a searchable page for previous invoices.
+
+Support lookup by:
+
+- Invoice number.
+- Date.
+- Customer name.
+- Customer phone.
+- Product name.
+- Barcode, where invoice-item lookup supports it.
+
+Show invoice number, date, total, payment method, and number of items.
+
+Allow me to open and print an old invoice without creating a new transaction.
+
+Store a historical snapshot containing product name, model, specification details where appropriate, unit price, quantity, discounts, and totals.
+
+Editing a catalog product later must never rewrite old invoices.
+
+Do not silently delete or change completed sales. Use a separate cancellation or correction record if correction functionality is implemented.
+
+---
+
+# 13. DAILY SALES FOR MY WORK
+
+Create a dedicated "مبيعات اليوم" screen.
+
+Show:
+
+- إجمالي مبيعات اليوم.
+- عدد الفواتير المكتملة.
+- عدد القطع المباعة.
+- متوسط قيمة الفاتورة.
+- آخر الفواتير.
+- Breakdown by payment method.
+
+Support filters for today, yesterday, the last seven days, and custom dates.
+
+Only completed invoices should count.
+
+Drafts, failed checkouts, and abandoned carts must not count.
+
+Calculate all totals from persisted invoice data.
+
+Use Africa/Cairo as the default local timezone for the daily sales view.
+
+Do not display purchase profit, commission, store expenses, payroll, supplier balances, or other owner-only financial reports.
+
+If cashier accounts are configured, support filtering by cashier identity. Do not pretend transactions belong to a specific person if that identity was not captured.
+
+---
+
+# 14. SIMPLE SETTINGS
+
+Create a clean settings page containing:
+
+- Store name and logo.
+- Store phone and address.
+- Receipt footer.
+- Default receipt format.
+- Barcode symbology preferences.
+- Default label size.
+- Label layout settings.
+- Barcode text visibility.
+- Product-name and price visibility on labels.
+- Discount enable/disable settings.
+- Optional stock tracking defaults.
+- Optional cashier display name.
+- Backup and restore.
+- Demo data management.
+
+Allow changing these preferences without modifying code.
+
+---
+
+# 15. PRODUCT IMPORT, EXPORT, AND BACKUP
+
+Provide CSV import and export. Support Excel files when the available environment and dependencies allow a real implementation.
+
+## Product import
+
+- Downloadable example template.
+- Arabic or English column mapping.
+- Import names, prices, brands, models, specifications, categories, SKUs, and barcodes.
+- Preview imported records before committing.
+- Validate prices and values.
+- Flag duplicate SKUs or barcodes.
+- Display import success and failure counts.
+- Allow downloading a report of invalid rows.
+- Never silently overwrite existing products.
+
+If a product has no internal barcode, generate a unique one during successful import when automatic barcode generation is enabled.
+
+If an imported barcode already belongs to another product, report the conflict instead of silently assigning it.
+
+## Backup
+
+Allow exporting supported product, barcode, category, and invoice data.
+
+Provide a structured backup file and a safe restore workflow.
+
+Validate the backup before modifying existing data.
+
+Require confirmation before overwriting existing records.
+
+Ensure restored barcode assignments remain unique and correct.
+
+Do not claim automatic cloud backups unless they are actually configured.
+
+---
+
+# 16. STORAGE AND DATABASE
+
+Preferred stack:
+
+- React.
+- TypeScript.
+- A maintainable reusable component architecture.
+- Suitable persistent data storage.
+- Supabase and PostgreSQL if configured and supported.
+
+If cloud credentials are missing, deliver a usable local mode based on a suitable persistent local database such as IndexedDB.
+
+The application must not lose its catalog or completed invoices when the page refreshes or the browser closes under normal conditions.
+
+Be explicit about whether the application is running in local mode or cloud mode.
+
+Local mode is not automatically synchronized between computers.
+
+If deployed to a shared cloud environment, use an appropriate backend and persistent database. Do not assume the local browser database is shared by all users.
+
+Images and barcodes must remain associated with the correct product.
+
+Use reliable transaction handling to keep invoices, payments, and inventory consistent.
+
+Prevent duplicate checkout requests.
+
+Never expose private database credentials or service-role API keys in client code.
+
+Do not reset real product data on startup or overwrite it with demo records.
+
+---
+
+# 17. FIRST-RUN EXPERIENCE
+
+When the catalog is empty, show a professional Arabic onboarding screen with:
+
+- إضافة أول منتج.
+- استيراد المنتجات.
+- إعداد طباعة الباركود.
+- تجربة النظام ببيانات تجريبية.
+
+Allow me to skip demo mode and start with a completely empty catalog.
+
+If demo data is enabled, label it clearly and ensure sample invoices and products cannot be confused with real transactions.
+
+Provide a safe way to remove demo data without deleting actual records.
+
+---
+
+# 18. ERROR HANDLING AND USABILITY
+
+- No fake buttons.
+- No decorative barcodes that do not encode saved values.
+- No placeholder pages presented as completed functionality.
+- No hardcoded sales statistics presented as real.
+- No infinite loading states.
+- No accidental duplicate transactions.
+- No silent data loss.
+- No loss of old invoices when editing products.
+- No barcode conflicts without clear warnings.
+- Proper Arabic validation messages.
+- Clear loading and success states.
+- Clear failure and retry behavior.
+- Confirmation before destructive actions.
+- Search must remain responsive for large catalogs.
+- Tables should support pagination or efficient loading when necessary.
+
+Keep the interface quick and friendly for someone using it throughout a working day.
+
+---
+
+# 19. REQUIRED TESTING
+
+After implementing the application, run the available build, type checks, and tests. Correct actual errors.
+
+Verify the following scenarios:
+
+### Catalog
+1. Create a laptop with processor, GPU, RAM, storage, and price.
+2. Create a MacBook with its relevant specifications.
+3. Create a mouse with minimal fields.
+4. Create a custom specification.
+5. Edit a product's price and information.
+6. Upload and save a product image.
+7. Create and edit categories.
+8. Verify persistence after refreshing the page.
+
+### Barcode
+9. Create a product and verify that a unique barcode is assigned and saved.
+10. Generate barcode graphics representing the correct stored value.
+11. Print a barcode label with the intended dimensions.
+12. Preview and print multiple labels at once.
+13. Print different products with different quantities of labels.
+14. Verify that printing labels does not alter inventory.
+15. Scan a saved barcode using keyboard input simulation or available testing tools.
+16. Verify that a scan finds the correct product.
+17. Scan an unknown barcode and verify the warning.
+18. Verify that a barcode cannot be assigned to two different products.
+19. Edit the product price and confirm that the saved barcode remains unchanged.
+20. Reprint an old product label.
+
+### Cashier and invoices
+21. Add multiple products to one invoice.
+22. Scan the same non-serialized product twice and verify quantity handling.
+23. Calculate discounts and totals accurately.
+24. Complete one sale and verify that it is not recorded twice.
+25. Verify stock changes exactly once where stock tracking is enabled.
+26. Print the Arabic receipt.
+27. Reopen a previous invoice and reprint it.
+28. Verify that the historical invoice total does not change after editing a product.
+29. Confirm the daily sales figures match completed invoices.
+30. Test backup and restore.
+
+Use the available test environment to verify features. Clearly distinguish an automated test of barcode generation from physical verification of a printed barcode using a real scanner.
+
+Do not claim that physical printing or scanning was tested unless it was actually tested.
+
+---
+
+# FINAL OBJECTIVE
+
+Build the actual RTX STORE application now.
+
+The result must be a premium, dependable cashier system that gives me complete practical control over products and specifications, automatically manages unique internal barcodes, prints usable product stickers, supports quick barcode scanning, creates customer invoices, and tracks daily sales.
+
+Prioritize:
+
+1. Easy product entry and full catalog control.
+2. Reliable automatic barcode generation.
+3. Accurate, configurable barcode label printing.
+4. Fast USB barcode scanning at the cashier.
+5. Correct invoice creation and receipt printing.
+6. Persistent product and invoice data.
+7. Simple daily sales tracking.
+8. Premium Arabic RTL design.
+
+Work directly in the available project. Preserve useful existing functionality. Do not return another specification or a design proposal.
+
+Implement the application, run available checks, fix errors, and then report what actually works, what was tested, and which external configuration is still required.
+
+The final product must be useful for actual daily work at RTX STORE, not merely impressive in a screenshot.
