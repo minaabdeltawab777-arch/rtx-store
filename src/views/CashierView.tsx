@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Product, Category, InvoiceItem, Invoice, StoreSettings } from '../types';
+import { Product, Category, InvoiceItem, Invoice, StoreSettings, AppUser } from '../types';
 import { formatEGP } from '../utils/formatters';
 import { sound } from '../services/sound';
 import { storage } from '../services/storage';
@@ -30,6 +30,7 @@ interface CashierViewProps {
   products: Product[];
   categories: Category[];
   settings: StoreSettings;
+  currentUser?: AppUser;
   onCheckoutSuccess: (invoice: Invoice) => void;
   onScanUnknownBarcode?: (barcode: string) => void;
   scannedBarcodeEvent?: { code: string; timestamp: number } | null;
@@ -39,6 +40,7 @@ export const CashierView: React.FC<CashierViewProps> = ({
   products,
   categories,
   settings,
+  currentUser,
   onCheckoutSuccess,
   onScanUnknownBarcode,
   scannedBarcodeEvent
@@ -281,7 +283,8 @@ export const CashierView: React.FC<CashierViewProps> = ({
         paymentMethod,
         customerName: customerName.trim() || undefined,
         customerPhone: customerPhone.trim() || undefined,
-        cashierName: settings.cashierDisplayName,
+        cashierName: currentUser ? currentUser.displayName : settings.cashierDisplayName,
+        cashierId: currentUser ? currentUser.id : undefined,
         notes: notes.trim() || undefined,
         format: settings.defaultReceiptFormat || 'thermal80',
         status: 'completed'

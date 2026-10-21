@@ -97,8 +97,12 @@ export interface Invoice {
   customerName?: string;
   customerPhone?: string;
   cashierName?: string;
+  cashierId?: string;
   notes?: string;
   status: 'completed' | 'cancelled';
+  cancelledAt?: string;
+  cancelledBy?: InvoiceCancelledBy;
+  cancelReason?: string;
   format: 'thermal80' | 'a4';
   isDemo?: boolean;
 }
@@ -141,6 +145,51 @@ export interface StoreSettings {
   defaultStockTracking: boolean;
 }
 
+export type UserRole = 'owner' | 'admin' | 'cashier';
+
+export interface UserPermissions {
+  canDiscount: boolean;
+  canViewReports: boolean;
+  canManageProducts: boolean;
+  canCancelInvoices: boolean;
+  canPrintLabels: boolean;
+  canManageUsers: boolean;
+}
+
+export interface AppUser {
+  id: string;
+  email: string;
+  username: string;
+  displayName: string;
+  role: UserRole;
+  isActive: boolean;
+  permissions: UserPermissions;
+  lastLoginAt?: string;
+  createdAt: string;
+}
+
+export interface InvoiceCancelledBy {
+  userId: string;
+  displayName: string;
+  role: string;
+}
+
+export interface CloudConfig {
+  supabaseUrl: string;
+  supabaseAnonKey: string;
+  autoSync: boolean;
+  sessionTimeoutHours: number;
+}
+
+export interface CloudSyncStatus {
+  isConfigured: boolean;
+  isConnected: boolean;
+  isSyncing: boolean;
+  lastSyncAt: string | null;
+  pendingChangesCount: number;
+  errorMessage: string | null;
+}
+
 export interface StockAdjustment {
   id: string;
   productId: string;
@@ -159,4 +208,5 @@ export type ActiveTab =
   | 'labels'
   | 'invoices'
   | 'daily_sales'
+  | 'users'
   | 'settings';

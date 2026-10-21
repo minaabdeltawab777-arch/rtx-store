@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Invoice, StoreSettings } from '../types';
+import { Invoice, StoreSettings, AppUser } from '../types';
 import { formatEGP, formatDateArabic, formatDateShort, getCairoDateString, getCairoYesterdayString } from '../utils/formatters';
 import { storage } from '../services/storage';
 import { ReceiptModal } from '../components/ReceiptModal';
+import { CancelInvoiceModal } from '../components/CancelInvoiceModal';
 import {
   Search,
   Printer,
@@ -17,18 +18,22 @@ import {
   Banknote,
   Smartphone,
   Layers,
-  ArrowUpDown
+  ArrowUpDown,
+  RotateCcw,
+  Info
 } from 'lucide-react';
 
 interface InvoicesViewProps {
   invoices: Invoice[];
   settings: StoreSettings;
+  currentUser: AppUser;
   onRefreshData: () => void;
 }
 
 export const InvoicesView: React.FC<InvoicesViewProps> = ({
   invoices,
   settings,
+  currentUser,
   onRefreshData
 }) => {
   const [search, setSearch] = useState('');
@@ -37,6 +42,7 @@ export const InvoicesView: React.FC<InvoicesViewProps> = ({
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'yesterday' | 'week'>('all');
 
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [invoiceToCancel, setInvoiceToCancel] = useState<Invoice | null>(null);
 
   const paymentLabels: Record<string, string> = {
     cash: 'نقدي (كاش)',
@@ -83,16 +89,6 @@ export const InvoicesView: React.FC<InvoicesViewProps> = ({
     return matchSearch && matchPayment && matchStatus && matchDate;
   });
 
-  const handleCancelInvoice = (invoice: Invoice) => {
-    if (confirm(`هل أنت متأكد من إلغاء الفاتورة (${invoice.invoiceNumber}) واسترجاع الأصناف للمخزون؟`)) {
-      const res = storage.cancelInvoice(invoice.id, true);
-      if (res.success) {
-        onRefreshData();
-      } else {
-        alert(res.error || 'فشل إلغاء الفاتورة');
-      }
-    }
-  };
 
   return (
     <div className="space-y-5">
@@ -262,15 +258,25 @@ export const InvoicesView: React.FC<InvoicesViewProps> = ({
 
                       {/* Status */}
                       <td className="py-3 px-4 text-center">
-                        <span
-                          className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                            invoice.status === 'completed'
-                              ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/30'
-                              : 'bg-red-950 text-red-400 border border-red-500/30'
-                          }`}
-                        >
-                          {invoice.status === 'completed' ? 'مكتملة' : 'ملغاة'}
-                        </span>
+                        <div className="flex flex-col items-center gap-1">
+                          <span
+                            className={`px-2.5 py-0.5 rounded text-[10px] font-bold ${
+                              invoice.status === 'completed'
+                                ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/30'
+                                : 'bg-red-950 text-red-400 border border-red-500/30'
+                            }`}
+                          >
+                            {invoice.status === 'completed' ? 'مكتملة' : 'ملغاة'}
+                          </span>
+                          {invoice.status === 'cancelled' && invoice.cancelReason && (
+                            <span
+                              className="text-[10px] text-red-300 max-w-[140px] truncate"
+                              title={`السبب: ${invoice.cancelReason} • ألغاها: ${invoice.cancelledBy?.displayName || 'غير محدد'}`}
+                            >
+                              السبب: {invoice.cancelReason}
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       {/* Actions */}
@@ -288,11 +294,12 @@ export const InvoicesView: React.FC<InvoicesViewProps> = ({
                           {invoice.status === 'completed' && (
                             <button
                               type="button"
-                              onClick={() => handleCancelInvoice(invoice)}
-                              className="p-1.5 text-slate-500 hover:text-red-400 rounded-lg hover:bg-white/5 transition-colors"
+                              onClick={() => setInvoiceToCancel(invoice)}
+                              className="px-2.5 py-1.5 bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-800/40 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
                               title="إلغاء الفاتورة واسترجاع المخزون"
                             >
-                              <XCircle className="w-4 h-4" />
+                              <RotateCcw className="w-3.5 h-3.5" />
+                              إلغاء
                             </button>
                           )}
                         </div>
@@ -313,6 +320,20 @@ export const InvoicesView: React.FC<InvoicesViewProps> = ({
           settings={settings}
           isOpen={Boolean(selectedInvoice)}
           onClose={() => setSelectedInvoice(null)}
+        />
+      )}
+
+      {/* Cancel Invoice Modal */}
+      {invoiceToCancel && (
+        <CancelInvoiceModal
+          invoice={invoiceToCancel}
+          currentUser={currentUser}
+          isOpen={Boolean(invoiceToCancel)}
+          onClose={() => setInvoiceToCancel(null)}
+          onSuccess={() => {
+            setInvoiceToCancel(null);
+            onRefreshData();
+          }}
         />
       )}
     </div>

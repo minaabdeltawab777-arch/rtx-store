@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Product, Category, Invoice, StoreSettings, ActiveTab } from './types';
+import { Product, Category, Invoice, StoreSettings, ActiveTab, AppUser, CloudSyncStatus } from './types';
 import { storage, DEFAULT_SETTINGS } from './services/storage';
+import { cloudService } from './services/supabase';
 import { useBarcodeScanner } from './hooks/useBarcodeScanner';
 import { sound } from './services/sound';
-import { formatTimeOnly, formatDateShort } from './utils/formatters';
+import { formatTimeOnly } from './utils/formatters';
 
 // Views
+import { LoginView } from './views/LoginView';
 import { DashboardView } from './views/DashboardView';
 import { CashierView } from './views/CashierView';
 import { ProductsView } from './views/ProductsView';
 import { LabelPrintingView } from './views/LabelPrintingView';
 import { InvoicesView } from './views/InvoicesView';
 import { DailySalesView } from './views/DailySalesView';
+import { UsersManagementView } from './views/UsersManagementView';
 import { SettingsView } from './views/SettingsView';
 
 // Modals
@@ -19,6 +22,8 @@ import { ReceiptModal } from './components/ReceiptModal';
 import { ProductFormModal } from './components/ProductFormModal';
 import { OnboardingModal } from './components/OnboardingModal';
 import { LinkBarcodeModal } from './components/LinkBarcodeModal';
+import { InitialAdminSetupModal } from './components/InitialAdminSetupModal';
+import { CloudSyncSettingsModal } from './components/CloudSyncSettingsModal';
 
 // Icons
 import {
@@ -31,21 +36,25 @@ import {
   Settings,
   ScanLine,
   Zap,
-  Cpu,
   Clock,
   User,
-  Sparkles,
-  Layers,
+  Users,
   Menu,
-  X
+  X,
+  LogOut,
+  Cloud,
+  ShieldCheck,
+  AlertCircle
 } from 'lucide-react';
 
 export default function App() {
+  const [currentUser, setCurrentUser] = useState<AppUser | null>(cloudService.getLocalSession());
   const [activeTab, setActiveTab] = useState<ActiveTab>('cashier');
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [settings, setSettings] = useState<StoreSettings>(DEFAULT_SETTINGS);
+  const [syncStatus, setSyncStatus] = useState<CloudSyncStatus>(cloudService.getSyncStatus());
 
   // Active modals
   const [activeReceipt, setActiveReceipt] = useState<Invoice | null>(null);
@@ -55,17 +64,25 @@ export default function App() {
   const [unknownBarcode, setUnknownBarcode] = useState<string | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isCloudModalOpen, setIsCloudModalOpen] = useState(false);
+  const [isInitialAdminSetupOpen, setIsInitialAdminSetupOpen] = useState(false);
 
   // Live Cairo Clock
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
+    // Subscribe to cloud sync status
+    const unsub = cloudService.subscribe(setSyncStatus);
+
     // Refresh storage data
     refreshAllData();
 
     // Clock ticker
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
+    return () => {
+      unsub();
+      clearInterval(timer);
+    };
   }, []);
 
   const refreshAllData = () => {
@@ -80,9 +97,15 @@ export default function App() {
     setInvoices(invs);
     setSettings(sets);
 
-    // If no products, prompt onboarding
     if (prods.length === 0) {
       setShowOnboarding(true);
+    }
+  };
+
+  const handleLogout = async () => {
+    if (confirm('هل أنت متأكد من رغبتك في تسجيل الخروج من النظام؟')) {
+      await cloudService.logout();
+      setCurrentUser(null);
     }
   };
 
@@ -90,10 +113,9 @@ export default function App() {
 
   // Global USB Barcode Scanner Hook
   useBarcodeScanner({
-    enabled: true,
+    enabled: Boolean(currentUser),
     playSound: settings.scannerAudioFeedback ?? true,
     onScan: (scannedCode) => {
-      // Find matching product
       const product = storage.findProductByBarcode(scannedCode);
 
       if (product) {
@@ -103,23 +125,111 @@ export default function App() {
           setActiveTab('cashier');
         }
       } else {
-        // Unknown barcode scanned
         sound.playScanError();
         setUnknownBarcode(scannedCode);
       }
     }
   });
 
-  // Navigation Items (Arabic-first)
-  const NAV_ITEMS = [
-    { id: 'dashboard', label: 'لوحة التحكم', icon: LayoutDashboard },
-    { id: 'cashier', label: 'الكاشير', icon: ShoppingCart, hotkey: 'F2' },
-    { id: 'products', label: 'المنتجات والمخزون', icon: Package, badge: products.length },
-    { id: 'labels', label: 'الباركود وطباعة الاستيكرات', icon: Printer },
-    { id: 'invoices', label: 'الفواتير السابقة', icon: FileText, badge: invoices.length },
-    { id: 'daily_sales', label: 'مبيعات اليوم', icon: TrendingUp },
-    { id: 'settings', label: 'الإعدادات والنسخ الاحتياطي', icon: Settings }
+  // If no user is logged in, show professional Arabic Login Screen
+  if (!currentUser) {
+    return (
+      <>
+        <LoginView
+          onLoginSuccess={(user) => {
+            setCurrentUser(user);
+            setActiveTab('cashier');
+            refreshAllData();
+          }}
+          onOpenInitialSetup={() => setIsInitialAdminSetupOpen(true)}
+          onOpenCloudConfig={() => setIsCloudModalOpen(true)}
+        />
+
+        <InitialAdminSetupModal
+          isOpen={isInitialAdminSetupOpen}
+          onClose={() => setIsInitialAdminSetupOpen(false)}
+          onSuccess={(admin) => {
+            setCurrentUser(admin);
+            setActiveTab('cashier');
+            refreshAllData();
+          }}
+        />
+
+        <CloudSyncSettingsModal
+          isOpen={isCloudModalOpen}
+          onClose={() => setIsCloudModalOpen(false)}
+          onRefreshLocalData={refreshAllData}
+        />
+      </>
+    );
+  }
+
+  // Navigation Items with RBAC Role & Permission Gates
+  const isSuperAdmin = currentUser.role === 'owner' || currentUser.role === 'admin';
+  const perms = currentUser.permissions;
+
+  const ALL_NAV_ITEMS: Array<{
+    id: ActiveTab;
+    label: string;
+    icon: any;
+    hotkey?: string;
+    badge?: number;
+    allowed: boolean;
+  }> = [
+    {
+      id: 'dashboard',
+      label: 'لوحة التحكم',
+      icon: LayoutDashboard,
+      allowed: isSuperAdmin || Boolean(perms?.canViewReports)
+    },
+    {
+      id: 'cashier',
+      label: 'الكاشير',
+      icon: ShoppingCart,
+      hotkey: 'F2',
+      allowed: true
+    },
+    {
+      id: 'products',
+      label: 'المنتجات والمخزون',
+      icon: Package,
+      badge: products.length,
+      allowed: isSuperAdmin || Boolean(perms?.canManageProducts)
+    },
+    {
+      id: 'labels',
+      label: 'الباركود وطباعة الاستيكرات',
+      icon: Printer,
+      allowed: isSuperAdmin || Boolean(perms?.canPrintLabels)
+    },
+    {
+      id: 'invoices',
+      label: 'الفواتير السابقة',
+      icon: FileText,
+      badge: invoices.length,
+      allowed: true
+    },
+    {
+      id: 'daily_sales',
+      label: 'مبيعات اليوم',
+      icon: TrendingUp,
+      allowed: isSuperAdmin || Boolean(perms?.canViewReports)
+    },
+    {
+      id: 'users',
+      label: 'إدارة المستخدمين',
+      icon: Users,
+      allowed: isSuperAdmin || Boolean(perms?.canManageUsers)
+    },
+    {
+      id: 'settings',
+      label: 'الإعدادات والسحابة',
+      icon: Settings,
+      allowed: isSuperAdmin
+    }
   ];
+
+  const visibleNavItems = ALL_NAV_ITEMS.filter(item => item.allowed);
 
   return (
     <div className="min-h-screen bg-[#0a0c11] text-slate-100 flex flex-col font-['Cairo',sans-serif] selection:bg-[#76b900]/30 selection:text-white">
@@ -158,16 +268,48 @@ export default function App() {
             </div>
           </div>
 
-          {/* Center: Live USB Barcode Scanner Status */}
-          <div className="hidden md:flex items-center gap-2 bg-[#161a25] px-3.5 py-1.5 rounded-full border border-[#272f44]">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#76b900] animate-pulse" />
-            <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-              <ScanLine className="w-3.5 h-3.5 text-[#76b900]" />
-              مسدس الباركود USB: <span className="text-[#76b900]">متصل وجاهز للعمل</span>
-            </span>
+          {/* Center: Live USB Barcode Scanner Status & Cloud Status */}
+          <div className="hidden md:flex items-center gap-2.5">
+            <div className="flex items-center gap-2 bg-[#161a25] px-3.5 py-1.5 rounded-full border border-[#272f44]">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#76b900] animate-pulse" />
+              <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                <ScanLine className="w-3.5 h-3.5 text-[#76b900]" />
+                مسدس USB: <span className="text-[#76b900]">متصل</span>
+              </span>
+            </div>
+
+            {/* Cloud Sync Status Indicator */}
+            <button
+              onClick={() => setIsCloudModalOpen(true)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-bold transition-all cursor-pointer ${
+                syncStatus.isConnected
+                  ? 'bg-green-950/40 border-green-800 text-green-300 hover:bg-green-950/60'
+                  : syncStatus.isConfigured
+                  ? 'bg-amber-950/40 border-amber-800 text-amber-300 hover:bg-amber-950/60'
+                  : 'bg-[#161a25] border-[#272f44] text-slate-400 hover:bg-[#1e2330]'
+              }`}
+              title="إعدادات ومزامنة السحابة"
+            >
+              <Cloud
+                className={`w-3.5 h-3.5 ${
+                  syncStatus.isConnected
+                    ? 'text-green-400'
+                    : syncStatus.isConfigured
+                    ? 'text-amber-400'
+                    : 'text-slate-400'
+                }`}
+              />
+              <span>
+                {syncStatus.isConnected
+                  ? 'السحابة متزامنة'
+                  : syncStatus.isConfigured
+                  ? 'جاري التحقق من السحابة'
+                  : 'وضع محلي'}
+              </span>
+            </button>
           </div>
 
-          {/* Right: Cashier, Clock & Hotkeys */}
+          {/* Right: Cairo Clock, Cashier User Chip & Logout */}
           <div className="flex items-center gap-3">
             {/* Clock */}
             <div className="hidden sm:flex items-center gap-2 bg-[#161a25] px-3 py-1.5 rounded-xl border border-[#272f44] text-xs font-mono text-slate-300">
@@ -176,16 +318,41 @@ export default function App() {
               <span className="text-slate-500">• القاهرة</span>
             </div>
 
-            {/* Cashier Badge */}
-            <div className="flex items-center gap-2 bg-[#161a25] px-3 py-1.5 rounded-xl border border-[#272f44]">
-              <div className="w-6 h-6 rounded-lg bg-[#76b900]/20 text-[#76b900] flex items-center justify-center">
-                <User className="w-3.5 h-3.5" />
+            {/* User Account Chip */}
+            <div className="flex items-center gap-2 bg-[#161a25] px-3 py-1 rounded-xl border border-[#272f44]">
+              <div
+                className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs ${
+                  currentUser.role === 'owner'
+                    ? 'bg-amber-500/20 text-amber-400'
+                    : currentUser.role === 'admin'
+                    ? 'bg-[#76b900]/20 text-[#76b900]'
+                    : 'bg-blue-500/20 text-blue-400'
+                }`}
+              >
+                <User className="w-4 h-4" />
               </div>
               <div className="text-right">
-                <div className="text-[11px] font-bold text-white truncate max-w-[130px]">
-                  {settings.cashierDisplayName || 'كاشير الفرع الرئيسي'}
+                <div className="text-[11px] font-bold text-white truncate max-w-[120px]">
+                  {currentUser.displayName}
+                </div>
+                <div className="text-[9px] text-[#76b900] font-mono">
+                  {currentUser.role === 'owner'
+                    ? 'المالك'
+                    : currentUser.role === 'admin'
+                    ? 'مدير فرع'
+                    : 'كاشير'}
                 </div>
               </div>
+
+              {/* Logout Button */}
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="p-1 text-slate-400 hover:text-red-400 rounded-lg hover:bg-[#202738] transition-colors cursor-pointer mr-1"
+                title="تسجيل الخروج"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
         </div>
@@ -194,19 +361,19 @@ export default function App() {
       {/* Mobile Navigation Dropdown */}
       {mobileMenuOpen && (
         <div className="no-print lg:hidden bg-[#0d1017] border-b border-[#252c3e] p-3 space-y-1 shadow-2xl z-40 sticky top-[61px]">
-          {NAV_ITEMS.map(item => {
+          {visibleNavItems.map(item => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
             return (
               <button
                 key={item.id}
                 onClick={() => {
-                  setActiveTab(item.id as ActiveTab);
+                  setActiveTab(item.id);
                   setMobileMenuOpen(false);
                 }}
-                className={`w-full px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-between transition-all ${
+                className={`w-full flex items-center justify-between p-2.5 rounded-xl text-xs font-bold transition-all ${
                   isActive
-                    ? 'bg-[#76b900] text-black font-black'
+                    ? 'bg-[#76b900] text-black shadow-lg shadow-[#76b900]/20'
                     : 'text-slate-300 hover:bg-[#161a25]'
                 }`}
               >
@@ -214,8 +381,12 @@ export default function App() {
                   <Icon className="w-4 h-4" />
                   <span>{item.label}</span>
                 </div>
-                {item.badge !== undefined && item.badge > 0 && (
-                  <span className="text-[10px] bg-black/20 px-2 py-0.5 rounded-full font-mono font-bold">
+                {item.badge !== undefined && (
+                  <span
+                    className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
+                      isActive ? 'bg-black text-[#76b900]' : 'bg-[#1e2330] text-slate-400'
+                    }`}
+                  >
                     {item.badge}
                   </span>
                 )}
@@ -225,54 +396,51 @@ export default function App() {
         </div>
       )}
 
-      {/* ================= MAIN NAVIGATION BAR ================= */}
-      <nav className="no-print bg-[#0f121a] border-b border-[#1f2533] px-4 sm:px-6 overflow-x-auto scrollbar-none sticky top-[61px] z-30">
-        <div className="flex items-center gap-1 sm:gap-2 py-2">
-          {NAV_ITEMS.map(item => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
+      {/* ================= SECONDARY NAVIGATION BAR (DESKTOP) ================= */}
+      <nav className="no-print hidden lg:flex bg-[#0d1017] border-b border-[#1f2433] px-6 py-2 gap-1.5 shadow-inner">
+        {visibleNavItems.map(item => {
+          const Icon = item.icon;
+          const isActive = activeTab === item.id;
 
-            return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  setActiveTab(item.id as ActiveTab);
-                  setMobileMenuOpen(false);
-                }}
-                className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 shrink-0 transition-all cursor-pointer ${
-                  isActive
-                    ? 'bg-[#76b900] text-black shadow-lg shadow-[#76b900]/20 font-black'
-                    : 'text-slate-400 hover:text-white hover:bg-[#181d29]'
-                }`}
-              >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-black' : 'text-slate-400'}`} />
-                <span>{item.label}</span>
-                {item.hotkey && (
-                  <span
-                    className={`text-[10px] px-1.5 py-0.2 rounded font-mono font-bold ${
-                      isActive ? 'bg-black/20 text-black' : 'bg-slate-800 text-slate-400'
-                    }`}
-                  >
-                    {item.hotkey}
-                  </span>
-                )}
-                {item.badge !== undefined && item.badge > 0 && (
-                  <span
-                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
-                      isActive ? 'bg-black text-[#76b900]' : 'bg-[#212838] text-slate-300'
-                    }`}
-                  >
-                    {item.badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+          return (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer relative ${
+                isActive
+                  ? 'bg-[#181e2b] text-[#76b900] border border-[#76b900]/30 shadow-md'
+                  : 'text-slate-400 hover:text-white hover:bg-[#131722]'
+              }`}
+            >
+              <Icon className={`w-4 h-4 ${isActive ? 'text-[#76b900]' : 'text-slate-400'}`} />
+              <span>{item.label}</span>
+
+              {item.hotkey && (
+                <span className="text-[9px] bg-slate-800 text-slate-400 px-1 rounded font-mono border border-slate-700">
+                  {item.hotkey}
+                </span>
+              )}
+
+              {item.badge !== undefined && (
+                <span
+                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+                    isActive ? 'bg-[#76b900] text-black' : 'bg-[#1b202c] text-slate-400'
+                  }`}
+                >
+                  {item.badge}
+                </span>
+              )}
+
+              {isActive && (
+                <span className="absolute bottom-0 left-3 right-3 h-[2px] bg-[#76b900] rounded-t-full" />
+              )}
+            </button>
+          );
+        })}
       </nav>
 
-      {/* ================= VIEW CONTAINER ================= */}
-      <main className="flex-1 p-3 sm:p-5 max-w-[1700px] w-full mx-auto">
+      {/* ================= MAIN APPLICATION CONTENT ================= */}
+      <main className="flex-1 p-4 sm:p-6 max-w-[1700px] w-full mx-auto">
         {activeTab === 'dashboard' && (
           <DashboardView
             products={products}
@@ -292,11 +460,12 @@ export default function App() {
             products={products}
             categories={categories}
             settings={settings}
-            scannedBarcodeEvent={scannedBarcode}
-            onCheckoutSuccess={(inv) => {
+            currentUser={currentUser}
+            onCheckoutSuccess={(invoice) => {
               refreshAllData();
-              setActiveReceipt(inv);
+              setActiveReceipt(invoice);
             }}
+            scannedBarcodeEvent={scannedBarcode}
             onScanUnknownBarcode={(code) => setUnknownBarcode(code)}
           />
         )}
@@ -330,6 +499,7 @@ export default function App() {
           <InvoicesView
             invoices={invoices}
             settings={settings}
+            currentUser={currentUser}
             onRefreshData={refreshAllData}
           />
         )}
@@ -341,6 +511,10 @@ export default function App() {
           />
         )}
 
+        {activeTab === 'users' && (
+          <UsersManagementView currentUser={currentUser} />
+        )}
+
         {activeTab === 'settings' && (
           <SettingsView
             settings={settings}
@@ -349,6 +523,7 @@ export default function App() {
               refreshAllData();
             }}
             onRefreshData={refreshAllData}
+            onOpenCloudModal={() => setIsCloudModalOpen(true)}
           />
         )}
       </main>
@@ -440,6 +615,13 @@ export default function App() {
           }}
         />
       )}
+
+      {/* 5. Cloud Synchronization & Migration Modal */}
+      <CloudSyncSettingsModal
+        isOpen={isCloudModalOpen}
+        onClose={() => setIsCloudModalOpen(false)}
+        onRefreshLocalData={refreshAllData}
+      />
     </div>
   );
 }

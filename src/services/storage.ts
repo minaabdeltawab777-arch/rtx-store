@@ -1,6 +1,7 @@
-import { Product, Category, Invoice, StoreSettings, StockAdjustment } from '../types';
+import { Product, Category, Invoice, StoreSettings, StockAdjustment, InvoiceCancelledBy } from '../types';
 import { INITIAL_CATEGORIES } from '../data/categories';
 import { INITIAL_DEMO_PRODUCTS } from '../data/demoProducts';
+import { cloudService } from './supabase';
 
 const STORAGE_KEYS = {
   PRODUCTS: 'rtx_store_products_v2',
@@ -405,16 +406,28 @@ class StorageService {
     return { success: true, invoice };
   }
 
-  public cancelInvoice(invoiceId: string, restoreStock = true): { success: boolean; error?: string } {
+  public cancelInvoice(
+    invoiceId: string,
+    reason: string,
+    cancelledBy: InvoiceCancelledBy,
+    restoreStock = true
+  ): { success: boolean; error?: string } {
     this.init();
     const invIndex = this.invoices.findIndex(inv => inv.id === invoiceId);
     if (invIndex < 0) return { success: false, error: 'الفاتورة غير موجودة' };
 
     const inv = this.invoices[invIndex];
-    if (inv.status === 'cancelled') return { success: false, error: 'الفاتورة ملغاة بالفعل' };
+    if (inv.status === 'cancelled') return { success: false, error: 'الفاتورة ملغاة بالفعل مسبقاً' };
 
-    inv.status = 'cancelled';
+    if (!reason || reason.trim().length < 3) {
+      return { success: false, error: 'يجب كتابة سبب واضح ومفصل لإلغاء الفاتورة' };
+    }
+
     const now = new Date().toISOString();
+    inv.status = 'cancelled';
+    inv.cancelledAt = now;
+    inv.cancelledBy = cancelledBy;
+    inv.cancelReason = reason.trim();
 
     if (restoreStock) {
       for (const item of inv.items) {
@@ -436,7 +449,7 @@ class StorageService {
               type: 'cancel_restore',
               quantityChange: item.quantity,
               newQuantity: prod.stockQuantity,
-              reason: `إلغاء الفاتورة ${inv.invoiceNumber} واسترجاع المخزون`,
+              reason: `إلغاء الفاتورة ${inv.invoiceNumber} (السبب: ${reason.trim()})`,
               timestamp: now
             });
           }
@@ -446,6 +459,14 @@ class StorageService {
     }
 
     localStorage.setItem(STORAGE_KEYS.INVOICES, JSON.stringify(this.invoices));
+
+    // Also trigger cloud cancel in background if cloud is active
+    if (cloudService.isConfigured()) {
+      cloudService.cancelInvoice(invoiceId, reason, cancelledBy).catch(err => {
+        console.warn('Cloud invoice cancellation sync deferred:', err);
+      });
+    }
+
     return { success: true };
   }
 
@@ -641,6 +662,58 @@ class StorageService {
     } catch (e: any) {
       return { success: false, message: `فشل استرجاع النسخة الاحتياطية: ${e?.message || 'خطأ غير متوقع'}` };
     }
+  }
+
+  // --- Safe Migration Snapshots & Conflict Detection ---
+  public createMigrationSnapshot(tag = 'manual'): string {
+    this.init();
+    const timestamp = new Date().toISOString();
+    const key = `rtx_store_snapshot_${Date.now()}`;
+    const payload = {
+      tag,
+      timestamp,
+      productsCount: this.products.length,
+      invoicesCount: this.invoices.length,
+      json: this.exportBackup()
+    };
+    try {
+      localStorage.setItem(key, JSON.stringify(payload));
+    } catch (e) {
+      console.warn('Could not store local snapshot:', e);
+    }
+    return key;
+  }
+
+  public getMigrationSnapshots(): Array<{ key: string; tag: string; timestamp: string; productsCount: number; invoicesCount: number }> {
+    const list: Array<{ key: string; tag: string; timestamp: string; productsCount: number; invoicesCount: number }> = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && (k.startsWith('rtx_store_snapshot_') || k.startsWith('rtx_store_migration_backup_'))) {
+        try {
+          const raw = localStorage.getItem(k);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            list.push({
+              key: k,
+              tag: parsed.tag || 'سحابي تلقائي',
+              timestamp: parsed.timestamp || '',
+              productsCount: parsed.productsCount || (parsed.data?.products?.length ?? 0),
+              invoicesCount: parsed.invoicesCount || (parsed.data?.invoices?.length ?? 0)
+            });
+          }
+        } catch {
+          // ignore corrupted snapshot
+        }
+      }
+    }
+    return list.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+  }
+
+  public checkBarcodeCollision(barcode: string, currentProductId?: string): boolean {
+    this.init();
+    return this.products.some(
+      p => p.id !== currentProductId && (p.internalBarcode === barcode || p.manufacturerBarcode === barcode)
+    );
   }
 }
 

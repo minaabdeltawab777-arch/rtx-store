@@ -36,26 +36,27 @@ export const DailySalesView: React.FC<DailySalesViewProps> = ({ invoices, settin
   const cairoYesterday = getCairoYesterdayString();
   const weekAgoTime = Date.now() - 7 * 86400000;
 
-  const filteredInvoices = completedInvoices.filter(inv => {
+  const filterByPeriod = (inv: Invoice) => {
     const invCairoDate = getCairoDateString(new Date(inv.createdAt));
     const invTime = new Date(inv.createdAt).getTime();
 
-    if (period === 'today') {
-      return invCairoDate === cairoToday;
-    }
-    if (period === 'yesterday') {
-      return invCairoDate === cairoYesterday;
-    }
-    if (period === 'week') {
-      return invTime >= weekAgoTime;
-    }
+    if (period === 'today') return invCairoDate === cairoToday;
+    if (period === 'yesterday') return invCairoDate === cairoYesterday;
+    if (period === 'week') return invTime >= weekAgoTime;
     if (period === 'custom') {
       if (customStartDate && invCairoDate < customStartDate) return false;
       if (customEndDate && invCairoDate > customEndDate) return false;
       return true;
     }
     return true;
-  });
+  };
+
+  const filteredInvoices = completedInvoices.filter(filterByPeriod);
+  const periodCancelledInvoices = invoices
+    .filter(inv => inv.status === 'cancelled')
+    .filter(filterByPeriod);
+
+  const totalCancelledAmount = periodCancelledInvoices.reduce((s, i) => s + i.total, 0);
 
   // Calculate Metrics
   const totalSales = filteredInvoices.reduce((sum, inv) => sum + inv.total, 0);
@@ -406,6 +407,59 @@ export const DailySalesView: React.FC<DailySalesViewProps> = ({ invoices, settin
           </table>
         </div>
       </div>
+
+      {/* Cancelled Invoices Audit Box */}
+      {periodCancelledInvoices.length > 0 && (
+        <div className="bg-[#140f14] border border-red-900/40 rounded-2xl p-5 shadow-xl space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-red-300 flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
+              فواتير ملغاة خلال هذه الفترة ({periodCancelledInvoices.length} فواتير):
+            </h3>
+            <span className="font-mono font-bold text-red-400 text-sm">
+              إجمالي المبالغ المستبعدة: {formatEGP(totalCancelledAmount)}
+            </span>
+          </div>
+          <p className="text-[11px] text-slate-400">
+            تم استبعاد هذه المبالغ تلقائياً من صافي المبيعات اليومية مع استرجاع البضاعة للمخزن وتوثيق سبب الإلغاء.
+          </p>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-right text-xs">
+              <thead>
+                <tr className="bg-[#1e141a] text-red-300 border-b border-red-900/30">
+                  <th className="py-2.5 px-3">رقم الفاتورة</th>
+                  <th className="py-2.5 px-3">تاريخ الإلغاء</th>
+                  <th className="py-2.5 px-3">المسؤول عن الإلغاء</th>
+                  <th className="py-2.5 px-3">سبب الإلغاء</th>
+                  <th className="py-2.5 px-3 text-left">القيمة المسترجعة</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#2a1b24] text-slate-300">
+                {periodCancelledInvoices.map(cinv => (
+                  <tr key={cinv.id} className="hover:bg-red-950/20">
+                    <td className="py-2.5 px-3 font-mono font-bold text-white">
+                      {cinv.invoiceNumber}
+                    </td>
+                    <td className="py-2.5 px-3 text-slate-400 font-mono text-[11px]">
+                      {cinv.cancelledAt ? formatDateArabic(cinv.cancelledAt) : 'غير مسجل'}
+                    </td>
+                    <td className="py-2.5 px-3 font-medium text-slate-200">
+                      {cinv.cancelledBy?.displayName || 'المدير المسؤول'}
+                    </td>
+                    <td className="py-2.5 px-3 text-red-300">
+                      {cinv.cancelReason || 'إلغاء عادي'}
+                    </td>
+                    <td className="py-2.5 px-3 text-left font-mono font-bold text-red-400">
+                      {formatEGP(cinv.total)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Modal */}
       {selectedInvoice && (

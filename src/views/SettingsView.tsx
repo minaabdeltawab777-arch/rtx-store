@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { StoreSettings, Product } from '../types';
 import { storage } from '../services/storage';
+import { cloudService } from '../services/supabase';
 import {
   Settings,
   Store,
@@ -15,19 +16,24 @@ import {
   FileSpreadsheet,
   FileText,
   Volume2,
-  ScanLine
+  ScanLine,
+  Cloud,
+  ShieldCheck,
+  Globe
 } from 'lucide-react';
 
 interface SettingsViewProps {
   settings: StoreSettings;
   onUpdateSettings: (newSettings: StoreSettings) => void;
   onRefreshData: () => void;
+  onOpenCloudModal?: () => void;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
   settings,
   onUpdateSettings,
-  onRefreshData
+  onRefreshData,
+  onOpenCloudModal
 }) => {
   const [formData, setFormData] = useState<StoreSettings>({ ...settings });
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -448,6 +454,43 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           حفظ جميع الإعدادات
         </button>
       </form>
+
+      {/* Cloud Integration & Multi-device Sync Box */}
+      <div className="bg-[#12151e] border border-[#273044] rounded-2xl p-5 shadow-lg space-y-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#76b900]/20 text-[#76b900] flex items-center justify-center">
+              <Cloud className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                الربط السحابي والمزامنة بين الأجهزة (Supabase / PostgreSQL)
+                {cloudService.isConfigured() ? (
+                  <span className="text-[10px] bg-green-950/60 text-green-400 font-bold px-2 py-0.5 rounded-full border border-green-800">
+                    مهيأ ومتصل
+                  </span>
+                ) : (
+                  <span className="text-[10px] bg-amber-950/60 text-amber-400 font-bold px-2 py-0.5 rounded-full border border-amber-800">
+                    وضع محلي فقط
+                  </span>
+                )}
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                مزامنة المخزون، الأسعار، الفواتير، وحسابات الكاشير بين فروع وأجهزة متعددة في الوقت الفعلي.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onOpenCloudModal}
+            className="px-4 py-2 bg-[#76b900] hover:bg-[#85ce00] text-black text-xs font-black rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer"
+          >
+            <Cloud className="w-4 h-4" />
+            إدارة الربط والمزامنة السحابية
+          </button>
+        </div>
+      </div>
 
       {/* Section 3: Backup, Restore & CSV Exchange */}
       <div className="bg-[#12151e] border border-[#262c3d] rounded-2xl p-5 shadow-lg space-y-4">
